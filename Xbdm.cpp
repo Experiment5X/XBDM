@@ -364,6 +364,36 @@ std::vector<FileEntry> XBDM::DevConsole::GetDirectoryContents(string directory, 
     return toReturn;
 }
 
+std::vector<Module> XBDM::DevConsole::GetLoadedModules(bool &ok, bool forceResend)
+{
+    if (loadedModules.size() == 0 || forceResend)
+    {
+        std::string response;
+        SendCommand("modules", response);
+
+        do
+        {
+            Module m;
+
+            m.name =            GetStringProperty(response, "name", ok, true);
+            m.baseAddress =     GetIntegerProperty(response, "base", ok, true, true);
+            m.size =            GetIntegerProperty(response, "size", ok, true, true);
+            m.check =           GetIntegerProperty(response, "check", ok, true, true);
+            m.timestamp =       GetIntegerProperty(response, "timestamp", ok, true, true);
+            m.dataAddress =     GetIntegerProperty(response, "pdata", ok, true, true);
+            m.dataSize =        GetIntegerProperty(response, "psize", ok, true, true);
+            m.threadId =        GetIntegerProperty(response, "thread", ok, true, true);
+            m.oSize =           GetIntegerProperty(response, "osize", ok, true, true);
+
+            if (ok)
+                loadedModules.push_back(m);
+        }
+        while (ok);
+    }
+
+    return loadedModules;
+}
+
 string XBDM::DevConsole::GetFeatures(bool &ok, bool forceResend)
 {
     if (features == "" || forceResend)

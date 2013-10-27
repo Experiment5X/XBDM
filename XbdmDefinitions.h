@@ -100,6 +100,19 @@ namespace XBDM
         bool directory;
     };
 
+    struct Module
+    {
+        std::string name;
+        DWORD baseAddress;
+        DWORD size;
+        DWORD check;            // no idea
+        DWORD timestamp;
+        DWORD dataAddress;      // probably the code start address
+        DWORD dataSize;
+        DWORD threadId;
+        DWORD oSize;            // no idea
+    };
+
     class XbdmException : public std::exception
     {
     public:

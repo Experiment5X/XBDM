@@ -17,6 +17,10 @@ int main(void)
     console.SendCommand("modules", response);
     cout << response << endl;
 
+    std::vector<Module> loadedModules = console.GetLoadedModules(ok);
+    for (Module m : loadedModules)
+        cout << m.name << endl;
+
     console.CloseConnection();
 
     getchar();

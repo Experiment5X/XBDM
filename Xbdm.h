@@ -56,6 +56,7 @@ namespace XBDM
         SystemInformation       GetSystemInformation(bool &ok, bool forceResend = false);
         std::vector<Drive>      GetDrives(bool &ok, bool forceResend = false);
         std::vector<FileEntry>  GetDirectoryContents(std::string directory, bool &ok);
+        std::vector<Module>     GetLoadedModules(bool &ok, bool forceResend = false);
 
     public:
         SOCKET          xsocket;
@@ -72,6 +73,7 @@ namespace XBDM
         DumpSettings                dumpSettings;
         SystemInformation           systemInformation;
         std::vector<Drive>          drives;
+        std::vector<Module>         loadedModules;
 
         // i would use std::regex in these 2 functions, but it's not fully implemented in mingw yet
         DWORD       GetIntegerProperty(std::string &response, std::string propertyName, bool &ok, bool hex = false, bool update = false);
