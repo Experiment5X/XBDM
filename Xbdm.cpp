@@ -381,17 +381,39 @@ std::vector<Module> XBDM::DevConsole::GetLoadedModules(bool &ok, bool forceResen
             m.name =            GetStringProperty(response, "name", ok, true);
             m.baseAddress =     GetIntegerProperty(response, "base", ok, true, true);
             m.size =            GetIntegerProperty(response, "size", ok, true, true);
-            m.check =           GetIntegerProperty(response, "check", ok, true, true);
+            m.checksum =        GetIntegerProperty(response, "check", ok, true, true);
             m.timestamp =       GetIntegerProperty(response, "timestamp", ok, true, true);
             m.dataAddress =     GetIntegerProperty(response, "pdata", ok, true, true);
             m.dataSize =        GetIntegerProperty(response, "psize", ok, true, true);
             m.threadId =        GetIntegerProperty(response, "thread", ok, true, true);
-            m.oSize =           GetIntegerProperty(response, "osize", ok, true, true);
+            m.originalSize =    GetIntegerProperty(response, "osize", ok, true, true);
 
             if (ok)
                 loadedModules.push_back(m);
         }
         while (ok);
+
+        // now let's request all of the sections for each of the module
+        for (Module &m : loadedModules)
+        {
+            std::string response;
+            SendCommand("modsections name=\"" + m.name + "\"", response);
+
+            do
+            {
+                ModuleSection section;
+
+                section.name =              GetStringProperty(response, "name", ok, true);
+                section.baseAddress =       GetIntegerProperty(response, "base", ok, true, true);
+                section.size =              GetIntegerProperty(response, "size", ok, true, true);
+                section.index =             GetIntegerProperty(response, "index", ok, false, true);
+                section.flags =             GetIntegerProperty(response, "flags", ok, false, true);
+
+                if (ok)
+                    m.sections.push_back(section);
+            }
+            while (ok);
+        }
     }
 
     return loadedModules;

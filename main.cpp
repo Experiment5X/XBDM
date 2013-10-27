@@ -14,12 +14,18 @@ int main(void)
     }
     bool ok;
     std::string response;
-    console.SendCommand("modules", response);
+    console.SendCommand("modsections name=\"xboxkrnl.exe\"", response);
     cout << response << endl;
 
     std::vector<Module> loadedModules = console.GetLoadedModules(ok);
-    for (Module m : loadedModules)
+    for (const Module &m : loadedModules)
+    {
         cout << m.name << endl;
+        for (ModuleSection sect : m.sections)
+        {
+            cout << "\t" << sect.name << "\t0x" << std::hex << sect.baseAddress << endl;
+        }
+    }
 
     console.CloseConnection();
 
