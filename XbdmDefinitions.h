@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <exception>
+#include <vector>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -87,6 +88,16 @@ namespace XBDM
         std::string baseKernelVersion;
         std::string kernelVersion;
         std::string recoveryVersion;
+    };
+
+    struct FileEntry
+    {
+        std::string name;
+        UINT64 size;
+        UINT64 creationTime;
+        UINT64 modifiedTime;
+
+        bool directory;
     };
 
     class XbdmException : public std::exception

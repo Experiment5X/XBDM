@@ -14,14 +14,11 @@ int main(void)
     }
     bool ok;
     std::string response;
-    console.SendCommand("systeminfo", response, 0x4000);
+    console.SendCommand("modules", response);
     cout << response << endl;
-
-    SystemInformation info = console.GetSystemInformation(ok);
 
     console.CloseConnection();
 
     getchar();
     return 0;
 }
-

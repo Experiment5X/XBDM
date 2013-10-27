@@ -105,13 +105,13 @@ bool XBDM::DevConsole::ReceiveBinary(BYTE *buffer, DWORD length)
     return bytesRecieved == length;
 }
 
-bool XBDM::DevConsole::SendCommand(string command, string &response, DWORD bufferSize)
+bool XBDM::DevConsole::SendCommand(string command, string &response)
 {
     ResponseStatus status;
-    return SendCommand(command, response, status, bufferSize);
+    return SendCommand(command, response, status);
 }
 
-bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseStatus &status, DWORD bufferSize)
+bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseStatus &status)
 {
     // send the command to the devkit
     command += "\r\n";
@@ -122,13 +122,11 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
     Sleep(20);
 
     // get the response from the console
-    BYTE *buffer = new BYTE[bufferSize];
-    ReceiveBinary(buffer, bufferSize);
+    BYTE buffer[0x400];
+    ReceiveBinary(buffer, 0x400);
 
     std::string rawResponse((char*)buffer);
     response = rawResponse.substr(5);
-
-    delete[] buffer;
 
     // get the status from the response
     int statusInt;
@@ -137,7 +135,18 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
 
     // remove the "multiline response follows\r\n"
     if (status == ResponseStatus::MultilineResponse && response.size() >= 28)
+    {
         response = response.substr(28);
+
+        // the end of the response always contains "\r\n."
+        while (response.find("\r\n.") == std::string::npos)
+        {
+            ZeroMemory(buffer, 0x400);
+
+            ReceiveBinary(buffer, 0x400);
+            response += std::string((char*)buffer);
+        }
+    }
 
     // trim off the leading and trailing whitespace
     response.erase(response.begin(), std::find_if(response.begin(), response.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -325,6 +334,36 @@ std::vector<Drive> XBDM::DevConsole::GetDrives(bool &ok, bool forceResend)
     return drives;
 }
 
+std::vector<FileEntry> XBDM::DevConsole::GetDirectoryContents(string directory, bool &ok)
+{
+    std::string response;
+    SendCommand("dirlist name=\"" + directory + "\"", response);
+
+    std::vector<FileEntry> toReturn;
+    if (response.find("file not found\r\n") == 0)
+    {
+        ok = false;
+        return toReturn;
+    }
+
+    do
+    {
+        FileEntry entry;
+
+        entry.name = GetStringProperty(response, "name", ok, true);
+        entry.size = ((UINT64)GetIntegerProperty(response, "sizehi", ok, true, true) << 32) | GetIntegerProperty(response, "sizelo", ok, true, true);
+        entry.creationTime = ((UINT64)GetIntegerProperty(response, "createhi", ok, true, true) << 32) | GetIntegerProperty(response, "createlo", ok, true, true);
+        entry.modifiedTime = ((UINT64)GetIntegerProperty(response, "changehi", ok, true, true) << 32) | GetIntegerProperty(response, "changelo", ok, true, true);
+        entry.directory = response.find(" directory") == 0;
+
+        toReturn.push_back(entry);
+    }
+    while (ok);
+
+    ok = true;
+    return toReturn;
+}
+
 string XBDM::DevConsole::GetFeatures(bool &ok, bool forceResend)
 {
     if (features == "" || forceResend)
@@ -400,13 +439,13 @@ string XBDM::DevConsole::GetType(bool &ok, bool forceResend)
     return type;
 }
 
-DWORD XBDM::DevConsole::GetIntegerProperty(const string &response, string propertyName, bool &ok, bool hex)
+DWORD XBDM::DevConsole::GetIntegerProperty(string &response, string propertyName, bool &ok, bool hex, bool update)
 {
     // all of the properties are like this: NAME=VALUE
     int startIndex = response.find(propertyName) + propertyName.size() + 1;
     int spaceIndex = response.find(' ', startIndex);
     int crIndex = response.find('\r', startIndex);
-    int endIndex = (spaceIndex < crIndex) ? spaceIndex : crIndex;
+    int endIndex = (spaceIndex != -1 && spaceIndex < crIndex) ? spaceIndex : crIndex;
 
     if (response.find(propertyName) == string::npos)
     {
@@ -420,6 +459,8 @@ DWORD XBDM::DevConsole::GetIntegerProperty(const string &response, string proper
     else
         istringstream(response.substr(startIndex, endIndex - startIndex)) >> toReturn;
 
+    if (update)
+        response = response.substr(endIndex);
     ok = true;
     return toReturn;
 }

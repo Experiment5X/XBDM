@@ -37,8 +37,8 @@ namespace XBDM
 
         bool SendBinary(const BYTE *buffer, DWORD length);
         bool ReceiveBinary(BYTE *buffer, DWORD length);
-        bool SendCommand(string command, string &response, DWORD bufferSize = 0x400);
-        bool SendCommand(string command, string &response, ResponseStatus &status, DWORD bufferSize = 0x400);
+        bool SendCommand(string command, string &response);
+        bool SendCommand(string command, string &response, ResponseStatus &status);
 
         bool                    IsHddEnabled(bool &ok, bool forceResend = false);
         DWORD                   GetDebugMemorySize(bool &ok, bool forceResend = false);
@@ -55,6 +55,7 @@ namespace XBDM
         DumpSettings            GetDumpSettings(bool &ok, bool forceResend = false);
         SystemInformation       GetSystemInformation(bool &ok, bool forceResend = false);
         std::vector<Drive>      GetDrives(bool &ok, bool forceResend = false);
+        std::vector<FileEntry>  GetDirectoryContents(std::string directory, bool &ok);
 
     public:
         SOCKET          xsocket;
@@ -73,7 +74,7 @@ namespace XBDM
         std::vector<Drive>          drives;
 
         // i would use std::regex in these 2 functions, but it's not fully implemented in mingw yet
-        DWORD       GetIntegerProperty(const std::string &response, std::string propertyName, bool &ok, bool hex = false);
+        DWORD       GetIntegerProperty(std::string &response, std::string propertyName, bool &ok, bool hex = false, bool update = false);
         std::string GetStringProperty(std::string &response, std::string propertyName, bool &ok, bool update = false);
         std::string GetEnumProperty(std::string &response, std::string propertyName, bool &ok);
     };
