@@ -81,6 +81,9 @@ bool XBDM::DevConsole::OpenConnection()
 
 bool XBDM::DevConsole::CloseConnection()
 {
+    std::string response;
+    SendCommand("bye", response);
+
     shutdown(xsocket, SD_SEND);
     closesocket(xsocket);
     WSACleanup();
