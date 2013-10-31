@@ -15,18 +15,12 @@ int main(void)
     }
     bool ok;
     std::string response;
-    console.SendCommand("screenshot", response);
-    cout << response << endl;
+    //console.SendCommand("getfile name=\"DEVKIT:\\settings.ini\"", response);
 
-    //console.CloseConnection();
+    console.GetFile("DEVKIT:\\settings.ini", "C:\\Users\\Adam\\Desktop\\settings.ini", ok);
+    console.CloseConnection();
 
-   /* auto buffer = console.GetScreenshot(ok);
-
-    fstream dump("C:\\Users\\Adam\\Desktop\\dump.bin", ios_base::out);
-    dump.write((char*)buffer.get(), 0x00195000);
-    dump.close();
-
-    cout << "success";*/
+    cout << "done" << endl;
 
     getchar();
     return 0;

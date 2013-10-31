@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cctype>
 #include <memory>
+#include <fstream>
 #include "XbdmDefinitions.h"
 
 using std::string;
@@ -38,8 +39,8 @@ namespace XBDM
 
         bool SendBinary(const BYTE *buffer, DWORD length);
         bool RecieveBinary(BYTE *buffer, DWORD length, bool text = true);
-        bool SendCommand(string command, string &response);
-        bool SendCommand(string command, string &response, ResponseStatus &status);
+        bool SendCommand(string command, string &response, DWORD responseLength = 0x400);
+        bool SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength = 0x400);
 
         bool                        IsHddEnabled(bool &ok, bool forceResend = false);
 
@@ -60,6 +61,7 @@ namespace XBDM
         std::vector<FileEntry>      GetDirectoryContents(std::string directory, bool &ok);
         std::vector<Module>         GetLoadedModules(bool &ok, bool forceResend = false);
         std::unique_ptr<BYTE[]>     GetScreenshot(bool &ok);
+        void                        GetFile(std::string remotePath, std::string localPath, bool &ok);
 
     public:
         SOCKET          xsocket;

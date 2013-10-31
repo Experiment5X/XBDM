@@ -129,13 +129,13 @@ bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, bool text)
     }
 }
 
-bool XBDM::DevConsole::SendCommand(string command, string &response)
+bool XBDM::DevConsole::SendCommand(string command, string &response, DWORD responseLength)
 {
     ResponseStatus status;
-    return SendCommand(command, response, status);
+    return SendCommand(command, response, status, responseLength);
 }
 
-bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseStatus &status)
+bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength)
 {
     // send the command to the devkit
     command += "\r\n";
@@ -146,11 +146,13 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
     Sleep(20);
 
     // get the response from the console
-    BYTE buffer[0x400] = {0};
-    RecieveBinary(buffer, 0x400);
+    BYTE *buffer = new BYTE[responseLength];
+    RecieveBinary(buffer, responseLength);
 
     std::string rawResponse((char*)buffer);
     response = rawResponse.substr(5);
+
+    delete[] buffer;
 
     // get the status from the response
     int statusInt;
@@ -197,6 +199,41 @@ std::unique_ptr<BYTE[]> XBDM::DevConsole::GetScreenshot(bool &ok)
     RecieveBinary(imageBuffer.get(), size, false);
 
     return imageBuffer;
+}
+
+void XBDM::DevConsole::GetFile(string remotePath, string localPath, bool &ok)
+{
+    // send the command to get the file, only reading the '203 - binary response follows' or whatever
+    std::string response = "";
+    SendCommand("getfile name=\"" + remotePath + "\"", response, 0x1E);
+
+    // read the file length
+    BYTE temp[4];
+    RecieveBinary(temp, 4, false);
+
+    // it's in little endian on the xbox, i have no idea what
+    // endian the system will be that this runs on, so we gotta swap it
+    DWORD fileLength = ((DWORD)temp[3] << 24) | ((DWORD)temp[2] << 16) | ((DWORD)temp[1] << 8) | (DWORD)temp[0];
+
+    // create the file on the local machine to write to
+    fstream outFile(localPath.c_str(), ios_base::out | ios_base::trunc);
+
+    // read the file in 0x10000 byte chunks
+    BYTE *fileBuffer = new BYTE[0x10000];
+    while (fileLength >= 0x10000)
+    {
+        RecieveBinary(fileBuffer, 0x10000, false);
+        outFile.write((char*)fileBuffer, 0x10000);
+    }
+    if (fileLength != 0)
+    {
+        RecieveBinary(fileBuffer, fileLength, false);
+        outFile.write((char*)fileBuffer, fileLength);
+    }
+
+    // cleanup, everyone's gotta do their share
+    outFile.close();
+    delete[] fileBuffer;
 }
 
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)
