@@ -9,6 +9,7 @@
 #include <functional>
 #include <algorithm>
 #include <cctype>
+#include <memory>
 #include "XbdmDefinitions.h"
 
 using std::string;
@@ -36,27 +37,29 @@ namespace XBDM
         bool CloseConnection();
 
         bool SendBinary(const BYTE *buffer, DWORD length);
-        bool ReceiveBinary(BYTE *buffer, DWORD length);
+        bool RecieveBinary(BYTE *buffer, DWORD length, bool text = true);
         bool SendCommand(string command, string &response);
         bool SendCommand(string command, string &response, ResponseStatus &status);
 
-        bool                    IsHddEnabled(bool &ok, bool forceResend = false);
-        DWORD                   GetDebugMemorySize(bool &ok, bool forceResend = false);
-        std::string             GetType(bool &ok, bool forceResend = false);
-        std::string             GetFeatures(bool &ok, bool forceResend = false);
-        std::string             GetDebugName(bool &ok, bool forceResend = false);
-        std::string             GetPlatform(bool &ok, bool forceResend = false);
-        std::string             GetMotherboard(bool &ok, bool forceResend = false);
-        std::string             GetBaseKernelVersion(bool &ok, bool forceResend = false);
-        std::string             GetKernelVersion(bool &ok, bool forceResend = false);
-        std::string             GetRecoveryVersion(bool &ok, bool forceResend = false);
-        DebugMemStatus          GetDebugMemoryStatus(bool &ok, bool forceResend = false);
-        DumpMode                GetDumpMode(bool &ok, bool forceResend = false);
-        DumpSettings            GetDumpSettings(bool &ok, bool forceResend = false);
-        SystemInformation       GetSystemInformation(bool &ok, bool forceResend = false);
-        std::vector<Drive>      GetDrives(bool &ok, bool forceResend = false);
-        std::vector<FileEntry>  GetDirectoryContents(std::string directory, bool &ok);
-        std::vector<Module>     GetLoadedModules(bool &ok, bool forceResend = false);
+        bool                        IsHddEnabled(bool &ok, bool forceResend = false);
+
+        DWORD                       GetDebugMemorySize(bool &ok, bool forceResend = false);
+        std::string                 GetType(bool &ok, bool forceResend = false);
+        std::string                 GetFeatures(bool &ok, bool forceResend = false);
+        std::string                 GetDebugName(bool &ok, bool forceResend = false);
+        std::string                 GetPlatform(bool &ok, bool forceResend = false);
+        std::string                 GetMotherboard(bool &ok, bool forceResend = false);
+        std::string                 GetBaseKernelVersion(bool &ok, bool forceResend = false);
+        std::string                 GetKernelVersion(bool &ok, bool forceResend = false);
+        std::string                 GetRecoveryVersion(bool &ok, bool forceResend = false);
+        DebugMemStatus              GetDebugMemoryStatus(bool &ok, bool forceResend = false);
+        DumpMode                    GetDumpMode(bool &ok, bool forceResend = false);
+        DumpSettings                GetDumpSettings(bool &ok, bool forceResend = false);
+        SystemInformation           GetSystemInformation(bool &ok, bool forceResend = false);
+        std::vector<Drive>          GetDrives(bool &ok, bool forceResend = false);
+        std::vector<FileEntry>      GetDirectoryContents(std::string directory, bool &ok);
+        std::vector<Module>         GetLoadedModules(bool &ok, bool forceResend = false);
+        std::unique_ptr<BYTE[]>     GetScreenshot(bool &ok);
 
     public:
         SOCKET          xsocket;

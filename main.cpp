@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <fstream>
 #include "Xbdm.h"
 
 using namespace XBDM;
@@ -14,20 +15,18 @@ int main(void)
     }
     bool ok;
     std::string response;
-    console.SendCommand("modsections name=\"xboxkrnl.exe\"", response);
+    console.SendCommand("screenshot", response);
     cout << response << endl;
 
-    std::vector<Module> loadedModules = console.GetLoadedModules(ok);
-    for (const Module &m : loadedModules)
-    {
-        cout << m.name << endl;
-        for (ModuleSection sect : m.sections)
-        {
-            cout << "\t" << sect.name << "\t0x" << std::hex << sect.baseAddress << endl;
-        }
-    }
+    //console.CloseConnection();
 
-    console.CloseConnection();
+   /* auto buffer = console.GetScreenshot(ok);
+
+    fstream dump("C:\\Users\\Adam\\Desktop\\dump.bin", ios_base::out);
+    dump.write((char*)buffer.get(), 0x00195000);
+    dump.close();
+
+    cout << "success";*/
 
     getchar();
     return 0;

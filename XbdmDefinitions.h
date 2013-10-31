@@ -124,14 +124,6 @@ namespace XBDM
         std::vector<ModuleSection> sections;
     };
 
-    class XbdmException : public std::exception
-    {
-    public:
-        virtual const char* what() const throw()
-        {
-            return "XBDM: An error occurred while connecting to the console.\n";
-        }
-    };
 };
 
 #endif // XBDMDEFINITIONS_H

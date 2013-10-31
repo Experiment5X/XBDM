@@ -73,7 +73,7 @@ bool XBDM::DevConsole::OpenConnection()
 
     // read the crap placed on teh queue, should be "201- connected"
     BYTE buffer[0x80] = {0};
-    ReceiveBinary(buffer, 0x80);
+    RecieveBinary(buffer, 0x80);
     DWORD cmp = strcmp((char*)buffer, "201- connected\r\n");
 
     return connected = (cmp == 0);
@@ -102,10 +102,31 @@ bool XBDM::DevConsole::SendBinary(const BYTE *buffer, DWORD length)
     return true;
 }
 
-bool XBDM::DevConsole::ReceiveBinary(BYTE *buffer, DWORD length)
+bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, bool text)
 {
-    int bytesRecieved = recv(xsocket, (char*)buffer, length, 0);
-    return bytesRecieved == length;
+    // for text, we're going to take characters off the queue until we hit a null-terminator
+    if (text)
+    {
+        recv(xsocket, (char*)buffer, length, MSG_PEEK);
+
+        DWORD lenToGet = 0;
+        do
+        {
+            if (buffer[lenToGet] == 0)
+                break;
+            lenToGet++;
+        }
+        while (lenToGet < length);
+
+        // now actually read the bytes off the queue
+        ZeroMemory(buffer, length);
+        recv(xsocket, (char*)buffer, lenToGet, 0);
+    }
+    else
+    {
+        int bytesRecieved = recv(xsocket, (char*)buffer, length, 0);
+        return bytesRecieved == length;
+    }
 }
 
 bool XBDM::DevConsole::SendCommand(string command, string &response)
@@ -125,8 +146,8 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
     Sleep(20);
 
     // get the response from the console
-    BYTE buffer[0x400];
-    ReceiveBinary(buffer, 0x400);
+    BYTE buffer[0x400] = {0};
+    RecieveBinary(buffer, 0x400);
 
     std::string rawResponse((char*)buffer);
     response = rawResponse.substr(5);
@@ -146,7 +167,7 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
         {
             ZeroMemory(buffer, 0x400);
 
-            ReceiveBinary(buffer, 0x400);
+            RecieveBinary(buffer, 0x400);
             response += std::string((char*)buffer);
         }
     }
@@ -162,6 +183,20 @@ bool XBDM::DevConsole::IsHddEnabled(bool &ok, bool forceResend)
 {
     SystemInformation info = GetSystemInformation(ok, forceResend);
     return info.hddEnabled;
+}
+
+std::unique_ptr<BYTE[]> XBDM::DevConsole::GetScreenshot(bool &ok)
+{
+    std::string response;
+    SendCommand("screenshot", response);
+
+    DWORD size = GetIntegerProperty(response, "framebuffersize", ok, true);
+
+    // get the screenshot from the console
+    std::unique_ptr<BYTE[]> imageBuffer(new BYTE[size]);
+    RecieveBinary(imageBuffer.get(), size, false);
+
+    return imageBuffer;
 }
 
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)
