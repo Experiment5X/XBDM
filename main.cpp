@@ -16,9 +16,10 @@ int main(void)
     bool ok;
     std::string response;
     //console.SendCommand("getfile name=\"DEVKIT:\\settings.ini\"", response);
+    //BYTE buffer[0x400] = {0};
+   // console.RecieveBinary(buffer, 0x400, false);
 
-    console.GetFile("DEVKIT:\\settings.ini", "C:\\Users\\Adam\\Desktop\\settings.ini", ok);
-    console.CloseConnection();
+    cout << console.GetFeatures(ok) << endl;
 
     cout << "done" << endl;
 

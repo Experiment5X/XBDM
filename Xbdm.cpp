@@ -145,34 +145,47 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
     // weeeeeeellllll, i guess the xbox needs some time to compile the response
     Sleep(20);
 
-    // get the response from the console
+    // get the response from the console, first just read the status
     BYTE *buffer = new BYTE[responseLength];
-    RecieveBinary(buffer, responseLength);
-
-    std::string rawResponse((char*)buffer);
-    response = rawResponse.substr(5);
-
-    delete[] buffer;
+    ZeroMemory(buffer, responseLength);
+    RecieveBinary(buffer, 5, false);
 
     // get the status from the response
     int statusInt;
-    istringstream(rawResponse.substr(0, 3)) >> statusInt;
+    istringstream(string((char*)buffer).substr(0, 3)) >> statusInt;
     status = (ResponseStatus)statusInt;
 
-    // remove the "multiline response follows\r\n"
-    if (status == ResponseStatus::MultilineResponse && response.size() >= 28)
+    // parse the response
+    switch ((ResponseStatus)statusInt)
     {
-        response = response.substr(28);
+        case ResponseStatus::OK:
+            RecieveBinary(buffer, responseLength);
+            response = std::string((char*)buffer);
+            break;
+        case ResponseStatus::Multiline:
+            // read off "mulitline response follows"
+            RecieveBinary(buffer, 0x1C, false);
+            ZeroMemory(buffer, responseLength);
 
-        // the end of the response always contains "\r\n."
-        while (response.find("\r\n.") == std::string::npos)
-        {
-            ZeroMemory(buffer, 0x400);
+            // the end of the response always contains "\r\n."
+            while (response.find("\r\n.") == std::string::npos)
+            {
+                ZeroMemory(buffer, 0x400);
 
-            RecieveBinary(buffer, 0x400);
-            response += std::string((char*)buffer);
-        }
+                RecieveBinary(buffer, 0x400);
+                response += std::string((char*)buffer);
+            }
+
+            break;
+        case ResponseStatus::Binary:
+            // read off "mulitline response follows"
+            RecieveBinary(buffer, 0x19, false);
+
+            // let the caller deal with reading the stream
+            break;
     }
+
+    delete[] buffer;
 
     // trim off the leading and trailing whitespace
     response.erase(response.begin(), std::find_if(response.begin(), response.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -216,7 +229,7 @@ void XBDM::DevConsole::GetFile(string remotePath, string localPath, bool &ok)
     DWORD fileLength = ((DWORD)temp[3] << 24) | ((DWORD)temp[2] << 16) | ((DWORD)temp[1] << 8) | (DWORD)temp[0];
 
     // create the file on the local machine to write to
-    fstream outFile(localPath.c_str(), ios_base::out | ios_base::trunc);
+    fstream outFile(localPath.c_str(), ios_base::out | ios_base::trunc | ios_base::binary);
 
     // read the file in 0x10000 byte chunks
     BYTE *fileBuffer = new BYTE[0x10000];
@@ -224,6 +237,8 @@ void XBDM::DevConsole::GetFile(string remotePath, string localPath, bool &ok)
     {
         RecieveBinary(fileBuffer, 0x10000, false);
         outFile.write((char*)fileBuffer, 0x10000);
+
+        fileLength -= 0x10000;
     }
     if (fileLength != 0)
     {

@@ -61,6 +61,7 @@ namespace XBDM
         std::vector<FileEntry>      GetDirectoryContents(std::string directory, bool &ok);
         std::vector<Module>         GetLoadedModules(bool &ok, bool forceResend = false);
         std::unique_ptr<BYTE[]>     GetScreenshot(bool &ok);
+        //std::unique_ptr<BYTE[]>     GetMemory(DWORD address, DWORD length, bool &ok);
         void                        GetFile(std::string remotePath, std::string localPath, bool &ok);
 
     public:

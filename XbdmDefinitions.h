@@ -14,7 +14,8 @@ namespace XBDM
     enum class ResponseStatus
     {
         OK = 200,
-        MultilineResponse = 202
+        Multiline = 202,
+        Binary = 203
     };
 
     enum class DebugMemStatus
