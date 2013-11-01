@@ -214,6 +214,45 @@ std::unique_ptr<BYTE[]> XBDM::DevConsole::GetScreenshot(bool &ok)
     return imageBuffer;
 }
 
+std::unique_ptr<BYTE[]> XBDM::DevConsole::GetMemory(DWORD address, DWORD length, bool &ok)
+{
+    // format the command to send to the console
+    char command[0x30] = {0};
+    snprintf(command, 0x30, "getmemex addr=0x%08x length=0x%08x", address, length);
+
+    std::string response;
+    SendCommand(std::string(command), response);
+
+    // allocate memory for the buffer, better be safe with these new fancy safe pointers
+    std::unique_ptr<BYTE[]> buffer(new BYTE[length]);
+
+    // we have to read the memory in 1kb, 0x400 byte, chunks
+    DWORD offset = 0;
+    while (length >= 0x400)
+    {
+        // there's always these 2 bytes at the beginning, i think they're flags
+        // not gonna worry about them now, if there are issues then there
+        // might be some status flag here, i see in their code they do something
+        // with the flag 0x8000, i think they might quit early? i dunno
+        RecieveBinary(buffer.get() + offset, 2, false);
+
+        // read the memory from the console
+        RecieveBinary(buffer.get() + offset, 0x400, false);
+        length -= 0x400;
+        offset += 0x400;
+    }
+    if (length > 0)
+    {
+        // read off those flags again
+        RecieveBinary(buffer.get() + offset, 2, false);
+
+        RecieveBinary(buffer.get() + offset, length, false);
+        length -= length;
+    }
+
+    return buffer;
+}
+
 void XBDM::DevConsole::GetFile(string remotePath, string localPath, bool &ok)
 {
     // send the command to get the file, only reading the '203 - binary response follows' or whatever

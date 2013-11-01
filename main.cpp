@@ -15,11 +15,16 @@ int main(void)
     }
     bool ok;
     std::string response;
-    //console.SendCommand("getfile name=\"DEVKIT:\\settings.ini\"", response);
-    //BYTE buffer[0x400] = {0};
-   // console.RecieveBinary(buffer, 0x400, false);
+    //console.SendCommand("getmemex addr=0x80000000 length=0x00000400", response);
 
-    cout << console.GetFeatures(ok) << endl;
+    //BYTE buffer[0x400] = {0};
+    //console.RecieveBinary(buffer, 0x800, false);
+
+    auto memory = console.GetMemory(0x80000000, 0x900, ok);
+
+    fstream file("C:\\Users\\Adam\\Desktop\\memdump.bin", ios_base::out | ios_base::binary | ios_base::trunc);
+    file.write((char*)memory.get(), 0x900);
+    file.close();
 
     cout << "done" << endl;
 
