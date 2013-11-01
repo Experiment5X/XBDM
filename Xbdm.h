@@ -64,6 +64,8 @@ namespace XBDM
         std::unique_ptr<BYTE[]>     GetMemory(DWORD address, DWORD length, bool &ok);
         void                        GetFile(std::string remotePath, std::string localPath, bool &ok);
 
+        void                        DumpMemory(DWORD address, DWORD length, std::string dumpPath);
+
     public:
         SOCKET          xsocket;
         bool            connected;

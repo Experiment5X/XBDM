@@ -20,12 +20,7 @@ int main(void)
     //BYTE buffer[0x400] = {0};
     //console.RecieveBinary(buffer, 0x800, false);
 
-    auto memory = console.GetMemory(0x80000000, 0x900, ok);
-
-    fstream file("C:\\Users\\Adam\\Desktop\\memdump.bin", ios_base::out | ios_base::binary | ios_base::trunc);
-    file.write((char*)memory.get(), 0x900);
-    file.close();
-
+    console.DumpMemory(0x80000000, 0x900, "C:\\Users\\Adam\\Desktop\\dump.bin");
     cout << "done" << endl;
 
     getchar();

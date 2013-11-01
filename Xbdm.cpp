@@ -290,6 +290,18 @@ void XBDM::DevConsole::GetFile(string remotePath, string localPath, bool &ok)
     delete[] fileBuffer;
 }
 
+void XBDM::DevConsole::DumpMemory(DWORD address, DWORD length, string dumpPath)
+{
+    // read the memory from the console
+    bool ok;
+    auto memory = GetMemory(address, length, ok);
+
+    // write the memory to the file the caller specified
+    fstream dumpFile(dumpPath.c_str(), ios_base::out | ios_base::binary | ios_base::trunc);
+    dumpFile.write((char*)memory.get(), length);
+    dumpFile.close();
+}
+
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)
 {
     if (debugMemSize == 0xFFFFFFFF || forceResend)
