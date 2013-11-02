@@ -39,8 +39,8 @@ namespace XBDM
 
         bool SendBinary(const BYTE *buffer, DWORD length);
         bool RecieveBinary(BYTE *buffer, DWORD length, bool text = true);
-        bool SendCommand(string command, string &response, DWORD responseLength = 0x400);
-        bool SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength = 0x400);
+        bool SendCommand(string command, string &response, DWORD responseLength = 0x400, DWORD statusLength = -1);
+        bool SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
 
         bool                        IsHddEnabled(bool &ok, bool forceResend = false);
 
@@ -60,6 +60,7 @@ namespace XBDM
         std::vector<Drive>          GetDrives(bool &ok, bool forceResend = false);
         std::vector<FileEntry>      GetDirectoryContents(std::string directory, bool &ok);
         std::vector<Module>         GetLoadedModules(bool &ok, bool forceResend = false);
+        std::vector<Thread>         GetThreads(bool &ok, bool forceResend = false);
         std::unique_ptr<BYTE[]>     GetScreenshot(bool &ok);
         std::unique_ptr<BYTE[]>     GetMemory(DWORD address, DWORD length, bool &ok);
         void                        GetFile(std::string remotePath, std::string localPath, bool &ok);
@@ -82,6 +83,7 @@ namespace XBDM
         SystemInformation           systemInformation;
         std::vector<Drive>          drives;
         std::vector<Module>         loadedModules;
+        std::vector<Thread>         threads;
 
         // i would use std::regex in these 2 functions, but it's not fully implemented in mingw yet
         DWORD       GetIntegerProperty(std::string &response, std::string propertyName, bool &ok, bool hex = false, bool update = false);

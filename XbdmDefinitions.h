@@ -15,7 +15,8 @@ namespace XBDM
     {
         OK = 200,
         Multiline = 202,
-        Binary = 203
+        Binary = 203,
+        Error = 405
     };
 
     enum class DebugMemStatus
@@ -123,6 +124,24 @@ namespace XBDM
         DWORD originalSize;     // no idea
 
         std::vector<ModuleSection> sections;
+    };
+
+    struct Thread
+    {
+        DWORD id;
+        DWORD suspendCount;
+        DWORD priority;
+        DWORD tlsBaseAddress;
+        DWORD baseAddress;
+        DWORD startAddress;
+        DWORD stackBaseAddress;
+        DWORD stackLimitAddress;
+        FILETIME creationTime;
+        DWORD stackSlackSpace;
+        DWORD nameAddress;
+        DWORD nameLength;
+        WORD currentProcessor;
+        DWORD lastError;
     };
 
 };

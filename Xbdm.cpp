@@ -129,14 +129,16 @@ bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, bool text)
     }
 }
 
-bool XBDM::DevConsole::SendCommand(string command, string &response, DWORD responseLength)
+bool XBDM::DevConsole::SendCommand(string command, string &response, DWORD responseLength, DWORD statusLength)
 {
     ResponseStatus status;
-    return SendCommand(command, response, status, responseLength);
+    return SendCommand(command, response, status, responseLength, statusLength);
 }
 
-bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength)
+bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength, DWORD statusLength)
 {
+    response = "";
+
     // send the command to the devkit
     command += "\r\n";
     if (!SendBinary((BYTE*)command.c_str(), command.length()))
@@ -162,9 +164,13 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
             RecieveBinary(buffer, responseLength);
             response = std::string((char*)buffer);
             break;
+
         case ResponseStatus::Multiline:
+            // THEY ARE SO INCONSISTENT! holy shit, i don't understand
+            // when requesting threads, it says "thread info follows" instead of the
+            // normal multiine response thing, it makes no sense
             // read off "mulitline response follows"
-            RecieveBinary(buffer, 0x1C, false);
+            RecieveBinary(buffer, (statusLength == -1) ? 0x1C : statusLength, false);
             ZeroMemory(buffer, responseLength);
 
             // the end of the response always contains "\r\n."
@@ -175,13 +181,19 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
                 RecieveBinary(buffer, 0x400);
                 response += std::string((char*)buffer);
             }
-
             break;
+
         case ResponseStatus::Binary:
             // read off "mulitline response follows"
-            RecieveBinary(buffer, 0x19, false);
+            RecieveBinary(buffer, (statusLength == -1) ? 0x19 : statusLength, false);
 
             // let the caller deal with reading the stream
+            break;
+
+        case ResponseStatus::Error:
+            RecieveBinary(buffer, responseLength);
+            response = std::string((char*)buffer);
+
             break;
     }
 
@@ -555,6 +567,68 @@ std::vector<Module> XBDM::DevConsole::GetLoadedModules(bool &ok, bool forceResen
     }
 
     return loadedModules;
+}
+
+std::vector<Thread> XBDM::DevConsole::GetThreads(bool &ok, bool forceResend)
+{
+    if (threads.size() == 0 || forceResend)
+    {
+        std::string response;
+        SendCommand("threads", response);
+
+        // parse all of the thread IDs from the response
+        std::vector<DWORD> threadIDs;
+        bool isFirst = true;
+        while (response.length() > 1)
+        {
+            // split the string up by the delimeter \r\n
+            std::string curID = response.substr(0, response.find("\r\n"));
+            response = response.substr(response.find("\r\n") + 2);
+
+            // we have to skip the first one, it's not a thread
+            // i have no idea what it actually is though
+            if (isFirst)
+            {
+                isFirst = false;
+                continue;
+            }
+
+            // convert the string ID to a DWORD
+            DWORD dwId;
+            istringstream(curID) >> dwId;
+            threadIDs.push_back(dwId);
+        }
+
+        // request information about all of the threads
+        for (DWORD id : threadIDs)
+        {
+            char command[0x50] = {0};
+            snprintf(command, 0x50, "threadinfo thread=0x%0.8x", id);
+
+            // request the thread info from the console
+            SendCommand(std::string(command), response, 0x400, 21);
+
+            // parse the response
+            Thread threadInfo;
+            threadInfo.id = id;
+            threadInfo.suspendCount =                   GetIntegerProperty(response, "suspend", ok);
+            threadInfo.priority =                       GetIntegerProperty(response, "priority", ok);
+            threadInfo.tlsBaseAddress =                 GetIntegerProperty(response, "tlsbase", ok, true);
+            threadInfo.baseAddress =                    GetIntegerProperty(response, "base", ok, true);
+            threadInfo.tlsBaseAddress =                 GetIntegerProperty(response, "limit", ok, true);
+            threadInfo.tlsBaseAddress =                 GetIntegerProperty(response, "slack", ok, true);
+            threadInfo.creationTime.dwHighDateTime =    GetIntegerProperty(response, "createhi", ok, true);
+            threadInfo.creationTime.dwLowDateTime =     GetIntegerProperty(response, "createlo", ok, true);
+            threadInfo.nameAddress =                    GetIntegerProperty(response, "nameaddr", ok, true);
+            threadInfo.nameLength =                     GetIntegerProperty(response, "namelen", ok, true);
+            threadInfo.currentProcessor =               GetIntegerProperty(response, "proc", ok, true);
+            threadInfo.lastError =                      GetIntegerProperty(response, "proc", ok, true);
+
+            threads.push_back(threadInfo);
+        }
+    }
+
+    return threads;
 }
 
 string XBDM::DevConsole::GetFeatures(bool &ok, bool forceResend)

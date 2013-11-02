@@ -13,15 +13,16 @@ int main(void)
         cout << "Couldn't connect to console." << endl;
         return -1;
     }
+    char command[0x50];
+    snprintf(command, 0x50, "threadinfo thread=0x%0.8x", 92);
+
     bool ok;
     std::string response;
-    //console.SendCommand("getmemex addr=0x80000000 length=0x00000400", response);
+    //console.SendCommand(std::string(command), response, 0x400, 21);
+    //cout << response << endl;
 
-    //BYTE buffer[0x400] = {0};
-    //console.RecieveBinary(buffer, 0x800, false);
+    console.DumpMemory(0x80000000, 0x900, "C:\\Users\\Adam\\Desktop\\memdump.bin");
 
-    console.DumpMemory(0x80000000, 0x900, "C:\\Users\\Adam\\Desktop\\dump.bin");
-    cout << "done" << endl;
 
     getchar();
     return 0;
