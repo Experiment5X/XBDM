@@ -631,6 +631,30 @@ std::vector<Thread> XBDM::DevConsole::GetThreads(bool &ok, bool forceResend)
     return threads;
 }
 
+std::vector<MemoryRegion> XBDM::DevConsole::GetMemoryRegions(bool &ok, bool forceResend)
+{
+    if (memoryRegions.size() == 0 || forceResend)
+    {
+        std::string response;
+        SendCommand("walkmem", response, 0x400, 37);
+
+        // parse all of the memory regions
+        ok = true;
+        while (ok)
+        {
+            MemoryRegion region;
+            region.baseAddress =    GetIntegerProperty(response, "base", ok, true, true);
+            region.size =           GetIntegerProperty(response, "size", ok, true, true);
+            region.protection =     MemoryRegionFlagsToString(GetIntegerProperty(response, "protect", ok, true, true));
+
+            if (ok)
+                memoryRegions.push_back(region);
+        }
+    }
+
+    return memoryRegions;
+}
+
 string XBDM::DevConsole::GetFeatures(bool &ok, bool forceResend)
 {
     if (features == "" || forceResend)
@@ -780,6 +804,30 @@ string XBDM::DevConsole::GetEnumProperty(string &response, string propertyName, 
     }
 
     return response.substr(startIndex, endIndex - startIndex);
+}
+
+string XBDM::DevConsole::MemoryRegionFlagsToString(DWORD flags)
+{
+    const std::string flagStrings[] =
+    {
+        "No Access",
+        "Read Only",
+        "Read Write",
+        "Write Copy",
+        "Execute",
+        "Execute Read",
+        "Execute Read Write",
+        "Execute Write Copy",
+        "Guard",
+        "No Cache",
+        "Write Combine",
+        "",
+        "User Read Only",
+        "User Read Write"
+    };
+
+    // doubles aren't precices, that's why i need to do the rounding
+    return flagStrings[(int)((log(flags) / log(2)) + .5)];
 }
 
 

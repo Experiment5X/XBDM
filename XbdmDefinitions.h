@@ -65,6 +65,32 @@ namespace XBDM
         Undefined = 0xFF
     };
 
+    enum class MemoryRegionFlags
+    {
+        Execute = 0x10,
+        ExecuteRead = 0x20,
+        ExecuteReadWrite = 0x40,
+        ExecuteWriteCopy = 0x80,
+        Guard = 0x100,
+        NoAccess = 1,
+        NoCache = 0x200,
+        ReadOnly = 2,
+        ReadWrite = 4,
+        UserReadOnly = 0x1000,
+        UserReadWrite = 0x2000,
+        WriteCombine = 0x400,
+        WriteCopy = 8,
+
+        Undefined = 0xFF
+    };
+
+    struct MemoryRegion
+    {
+        DWORD baseAddress;
+        DWORD size;
+        std::string protection;
+    };
+
     struct DumpSettings
     {
         DumpReport report;

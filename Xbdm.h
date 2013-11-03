@@ -62,13 +62,14 @@ namespace XBDM
         std::vector<FileEntry>      GetDirectoryContents(std::string directory, bool &ok);
         std::vector<Module>         GetLoadedModules(bool &ok, bool forceResend = false);
         std::vector<Thread>         GetThreads(bool &ok, bool forceResend = false);
+        std::vector<MemoryRegion>   GetMemoryRegions(bool &ok, bool forceResend = false);
         std::unique_ptr<BYTE[]>     GetScreenshot(bool &ok);
         std::unique_ptr<BYTE[]>     GetMemory(DWORD address, DWORD length, bool &ok);
         void                        GetFile(std::string remotePath, std::string localPath, bool &ok);
 
         void                        DumpMemory(DWORD address, DWORD length, std::string dumpPath);
 
-    public:
+    private:
         SOCKET          xsocket;
         bool            connected;
         std::string     ip;
@@ -86,11 +87,14 @@ namespace XBDM
         std::vector<Drive>          drives;
         std::vector<Module>         loadedModules;
         std::vector<Thread>         threads;
+        std::vector<MemoryRegion>    memoryRegions;
 
-        // i would use std::regex in these 2 functions, but it's not fully implemented in mingw yet
-        DWORD       GetIntegerProperty(std::string &response, std::string propertyName, bool &ok, bool hex = false, bool update = false);
-        std::string GetStringProperty(std::string &response, std::string propertyName, bool &ok, bool update = false);
-        std::string GetEnumProperty(std::string &response, std::string propertyName, bool &ok);
+        // i would use std::regex in these 3 functions, but it's not fully implemented in mingw yet
+        DWORD           GetIntegerProperty(std::string &response, std::string propertyName, bool &ok, bool hex = false, bool update = false);
+        std::string     GetStringProperty(std::string &response, std::string propertyName, bool &ok, bool update = false);
+        std::string     GetEnumProperty(std::string &response, std::string propertyName, bool &ok);
+
+        std::string     MemoryRegionFlagsToString(DWORD flags);
     };
 };
 

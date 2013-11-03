@@ -16,10 +16,15 @@ int main(void)
 
     bool ok;
     std::string response;
-    console.SendCommand("walkmem", response, 0x800, 0);
-    cout << response << endl;
+    //console.SendCommand("walkmem", response, 0x400, 0);
+    //cout << response << endl;
 
-    //cout << console.GetActiveTitle(ok) << endl;
+    for (MemoryRegion m : console.GetMemoryRegions(ok))
+    {
+        cout << std::hex << m.baseAddress << "\t";
+        cout << std::hex << m.size << "\t";
+        cout << m.protection << std::endl;
+    }
 
     getchar();
     return 0;
