@@ -19,12 +19,8 @@ int main(void)
     //console.SendCommand("walkmem", response, 0x400, 0);
     //cout << response << endl;
 
-    for (MemoryRegion m : console.GetMemoryRegions(ok))
-    {
-        cout << std::hex << m.baseAddress << "\t";
-        cout << std::hex << m.size << "\t";
-        cout << m.protection << std::endl;
-    }
+    console.RebootToCurrentTitle();
+    cout << "rebooting..." << endl;
 
     getchar();
     return 0;

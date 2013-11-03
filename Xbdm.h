@@ -69,6 +69,11 @@ namespace XBDM
 
         void                        DumpMemory(DWORD address, DWORD length, std::string dumpPath);
 
+        void                        RebootToXShell();
+        void                        RebootToCurrentTitle();
+        void                        ColdReboot();
+        void                        LaunchXEX(std::string xexPath);
+
     private:
         SOCKET          xsocket;
         bool            connected;

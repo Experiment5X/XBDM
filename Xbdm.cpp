@@ -314,6 +314,33 @@ void XBDM::DevConsole::DumpMemory(DWORD address, DWORD length, string dumpPath)
     dumpFile.close();
 }
 
+void XBDM::DevConsole::RebootToXShell()
+{
+    std::string response;
+    SendCommand("magicboot", response);
+}
+
+void XBDM::DevConsole::RebootToCurrentTitle()
+{
+    bool ok;
+    LaunchXEX(GetActiveTitle(ok));
+}
+
+void XBDM::DevConsole::ColdReboot()
+{
+    std::string response;
+    SendCommand("magicboot  COLD", response);
+}
+
+void XBDM::DevConsole::LaunchXEX(string xexPath)
+{
+    // for whatever reason the xbox needs the directory that the xex is in
+    std::string directory = xexPath.substr(0, xexPath.find_last_of('\\') + 1);
+
+    std::string response;
+    SendCommand("magicboot title=\"" + xexPath + "\" directory=\"" + directory + "\"", response);
+}
+
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)
 {
     if (debugMemSize == 0xFFFFFFFF || forceResend)
