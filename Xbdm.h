@@ -53,6 +53,7 @@ namespace XBDM
         std::string                 GetBaseKernelVersion(bool &ok, bool forceResend = false);
         std::string                 GetKernelVersion(bool &ok, bool forceResend = false);
         std::string                 GetRecoveryVersion(bool &ok, bool forceResend = false);
+        std::string                 GetActiveTitle(bool &ok, bool forceResend = false);
         DebugMemStatus              GetDebugMemoryStatus(bool &ok, bool forceResend = false);
         DumpMode                    GetDumpMode(bool &ok, bool forceResend = false);
         DumpSettings                GetDumpSettings(bool &ok, bool forceResend = false);
@@ -77,6 +78,7 @@ namespace XBDM
         std::string                 type;
         std::string                 features;
         std::string                 debugName;
+        std::string                 activeTitle;
         DebugMemStatus              debugMemStatus;
         DumpMode                    dumpMode;
         DumpSettings                dumpSettings;

@@ -184,7 +184,7 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
             break;
 
         case ResponseStatus::Binary:
-            // read off "mulitline response follows"
+            // read off "binary response follows"
             RecieveBinary(buffer, (statusLength == -1) ? 0x19 : statusLength, false);
 
             // let the caller deal with reading the stream
@@ -686,6 +686,19 @@ string XBDM::DevConsole::GetRecoveryVersion(bool &ok, bool forceResend)
 {
     SystemInformation info = GetSystemInformation(ok, forceResend);
     return info.recoveryVersion;
+}
+
+string XBDM::DevConsole::GetActiveTitle(bool &ok, bool forceResend)
+{
+    if (activeTitle == "" || forceResend)
+    {
+        std::string response;
+        SendCommand("xbeinfo running", response);
+
+        activeTitle = GetStringProperty(response, "name", ok);
+    }
+
+    return activeTitle;
 }
 
 string XBDM::DevConsole::GetType(bool &ok, bool forceResend)

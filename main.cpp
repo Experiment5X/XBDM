@@ -13,16 +13,13 @@ int main(void)
         cout << "Couldn't connect to console." << endl;
         return -1;
     }
-    char command[0x50];
-    snprintf(command, 0x50, "threadinfo thread=0x%0.8x", 92);
 
     bool ok;
     std::string response;
-    //console.SendCommand(std::string(command), response, 0x400, 21);
-    //cout << response << endl;
+    console.SendCommand("walkmem", response, 0x800, 0);
+    cout << response << endl;
 
-    console.DumpMemory(0x80000000, 0x900, "C:\\Users\\Adam\\Desktop\\memdump.bin");
-
+    //cout << console.GetActiveTitle(ok) << endl;
 
     getchar();
     return 0;
