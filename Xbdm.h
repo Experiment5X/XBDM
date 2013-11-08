@@ -42,8 +42,8 @@ namespace XBDM
         bool SendCommand(string command, string &response, DWORD responseLength = 0x400, DWORD statusLength = -1);
         bool SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
 
+        // getters
         bool                        IsHddEnabled(bool &ok, bool forceResend = false);
-
         DWORD                       GetDebugMemorySize(bool &ok, bool forceResend = false);
         std::string                 GetType(bool &ok, bool forceResend = false);
         std::string                 GetFeatures(bool &ok, bool forceResend = false);
@@ -69,10 +69,16 @@ namespace XBDM
 
         void                        DumpMemory(DWORD address, DWORD length, std::string dumpPath);
 
+        // rebooting functions
         void                        RebootToXShell();
         void                        RebootToCurrentTitle();
         void                        ColdReboot();
         void                        LaunchXEX(std::string xexPath);
+
+        // automated controller input functions
+        void                        StartAutomatingInput(DWORD userIndex, bool &ok);
+        void                        SendButton(DWORD userIndex, GamepadState gamepad, bool &ok);
+        void                        StopAutomatingInput(DWORD userIndex, bool &ok);
 
     private:
         SOCKET          xsocket;

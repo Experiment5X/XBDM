@@ -16,6 +16,7 @@ namespace XBDM
         OK = 200,
         Multiline = 202,
         Binary = 203,
+        ReadyToAcceptData = 204,
         Error = 405
     };
 
@@ -170,6 +171,39 @@ namespace XBDM
         DWORD lastError;
     };
 
+    struct GamepadState
+    {
+        // all of these buttons have a pressed and non pressed state
+        bool dpadUP         : 1;
+        bool dpadDOWN       : 1;
+        bool dpadLEFT       : 1;
+        bool dpadRIGHT      : 1;
+        bool start          : 1;
+        bool back           : 1;
+        bool leftThumb      : 1;
+        bool rightThumb     : 1;
+        bool leftBumper     : 1;
+        bool rightBumper    : 1;
+        bool centerButton   : 1;
+        bool buttonBind     : 1;
+        bool A              : 1;
+        bool B              : 1;
+        bool X              : 1;
+        bool Y              : 1;
+
+        // the amount of pressure put on the trigger
+        BYTE leftTrigger;
+        BYTE rightTrigger;
+
+        // Each of the thumbstick axis members is a signed
+        // value describing the position of the thumbstick.
+        // A value of 0 is centered. Negative values signify down
+        // or to the left. Positive values signify up or to the right.
+        SHORT leftStickX;
+        SHORT leftStickY;
+        SHORT rightStickX;
+        SHORT rightStickY;
+    };
 };
 
 #endif // XBDMDEFINITIONS_H

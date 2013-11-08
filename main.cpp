@@ -15,13 +15,19 @@ int main(void)
     }
 
     bool ok;
-    std::string response;
-    //console.SendCommand("walkmem", response, 0x400, 0);
+    //std::string response;
+    //console.SendCommand("autoinput user=0 bind queuelen=0", response);
     //cout << response << endl;
 
-    console.RebootToCurrentTitle();
-    cout << "rebooting..." << endl;
+    console.StartAutomatingInput(0, ok);
 
+    GamepadState gamepad = {0};
+    gamepad.A = true;
+    console.SendButton(0, gamepad, ok);
+
+    console.StopAutomatingInput(0, ok);
+
+    cout << "done" << endl;
     getchar();
     return 0;
 }

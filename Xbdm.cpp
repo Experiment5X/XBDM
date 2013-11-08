@@ -161,6 +161,7 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
     switch ((ResponseStatus)statusInt)
     {
         case ResponseStatus::OK:
+        case ResponseStatus::ReadyToAcceptData:
             RecieveBinary(buffer, responseLength);
             response = std::string((char*)buffer);
             break;
@@ -339,6 +340,65 @@ void XBDM::DevConsole::LaunchXEX(string xexPath)
 
     std::string response;
     SendCommand("magicboot title=\"" + xexPath + "\" directory=\"" + directory + "\"", response);
+}
+
+void XBDM::DevConsole::StartAutomatingInput(DWORD userIndex, bool &ok)
+{
+    // validate the user index
+    if (userIndex > 3)
+    {
+        ok = false;
+        return;
+    }
+
+    // get the message to send to the user
+    char message[50] = {0};
+    snprintf(message, 50, "autoinput user=%d bind queuelen=0", userIndex);
+
+    // tell the console to start with the input
+    std::string response;
+    SendCommand(std::string(message), response);
+}
+
+void XBDM::DevConsole::SendButton(DWORD userIndex, GamepadState gamepad, bool &ok)
+{
+    // validate the user index
+    if (userIndex > 3)
+    {
+        ok = false;
+        return;
+    }
+
+    char command[40] = {0};
+    snprintf(command, 40, "autoinput user=%d setpacket", userIndex);
+
+    // tell the console we're about to send a gamepad state
+    std::string response;
+    SendCommand(std::string(command), response);
+
+    // send the gamepad state
+    SendBinary((BYTE*)&gamepad, 12);
+
+    ZeroMemory(command, 40);
+    RecieveBinary((BYTE*)command, 9, true);
+}
+
+void XBDM::DevConsole::StopAutomatingInput(DWORD userIndex, bool &ok)
+{
+    // validate the user index
+    if (userIndex > 3)
+    {
+        ok = false;
+        return;
+    }
+
+    // get the message to send to the user
+    char message[30];
+    snprintf(message, 30, "autoinput user=%d unbind", userIndex);
+
+    // tell the console to start with the input
+    std::string response;
+    SendCommand(std::string(message), response);
 }
 
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)

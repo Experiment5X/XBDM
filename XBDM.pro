@@ -14,6 +14,6 @@ HEADERS += \
     XbdmDefinitions.h \
     Xbdm.h
 
-QMAKE_CXXFLAGS += -g
+#QMAKE_CXXFLAGS += -g
 
 win32: LIBS += -lws2_32
