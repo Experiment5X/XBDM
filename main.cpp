@@ -19,13 +19,13 @@ int main(void)
     //console.SendCommand("autoinput user=0 bind queuelen=0", response);
     //cout << response << endl;
 
-    console.StartAutomatingInput(0, ok);
+    GamepadState state = { 0 };
+    state.dpadDOWN = true;
 
-    GamepadState gamepad = {0};
-    gamepad.A = true;
-    console.SendButton(0, gamepad, ok);
+    std::vector<GamepadState> gamepads;
+    gamepads.assign(3, state);
 
-    console.StopAutomatingInput(0, ok);
+    console.SendGamepads(0, gamepads, ok);
 
     cout << "done" << endl;
     getchar();

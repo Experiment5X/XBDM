@@ -90,6 +90,12 @@ bool XBDM::DevConsole::CloseConnection()
     return true;
 }
 
+void XBDM::DevConsole::ResetConnection()
+{
+    CloseConnection();
+    OpenConnection();
+}
+
 bool XBDM::DevConsole::SendBinary(const BYTE *buffer, DWORD length)
 {
     int iResult = send(xsocket, (char*)buffer, length, 0);
@@ -147,6 +153,11 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
     // weeeeeeellllll, i guess the xbox needs some time to compile the response
     Sleep(20);
 
+    return RecieveResponse(response, status, responseLength, statusLength);
+}
+
+bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status, DWORD responseLength, DWORD statusLength)
+{
     // get the response from the console, first just read the status
     BYTE *buffer = new BYTE[responseLength];
     ZeroMemory(buffer, responseLength);
@@ -196,6 +207,8 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
             response = std::string((char*)buffer);
 
             break;
+        default:
+            return false;
     }
 
     delete[] buffer;
@@ -342,7 +355,7 @@ void XBDM::DevConsole::LaunchXEX(string xexPath)
     SendCommand("magicboot title=\"" + xexPath + "\" directory=\"" + directory + "\"", response);
 }
 
-void XBDM::DevConsole::StartAutomatingInput(DWORD userIndex, bool &ok)
+void XBDM::DevConsole::StartAutomatingInput(DWORD userIndex, bool &ok, DWORD queueLen)
 {
     // validate the user index
     if (userIndex > 3)
@@ -353,34 +366,11 @@ void XBDM::DevConsole::StartAutomatingInput(DWORD userIndex, bool &ok)
 
     // get the message to send to the user
     char message[50] = {0};
-    snprintf(message, 50, "autoinput user=%d bind queuelen=0", userIndex);
+    snprintf(message, 50, "autoinput user=%d bind queuelen=%d", userIndex, queueLen);
 
     // tell the console to start with the input
     std::string response;
     SendCommand(std::string(message), response);
-}
-
-void XBDM::DevConsole::SendButton(DWORD userIndex, GamepadState gamepad, bool &ok)
-{
-    // validate the user index
-    if (userIndex > 3)
-    {
-        ok = false;
-        return;
-    }
-
-    char command[40] = {0};
-    snprintf(command, 40, "autoinput user=%d setpacket", userIndex);
-
-    // tell the console we're about to send a gamepad state
-    std::string response;
-    SendCommand(std::string(command), response);
-
-    // send the gamepad state
-    SendBinary((BYTE*)&gamepad, 12);
-
-    ZeroMemory(command, 40);
-    RecieveBinary((BYTE*)command, 9, true);
 }
 
 void XBDM::DevConsole::StopAutomatingInput(DWORD userIndex, bool &ok)
@@ -399,6 +389,89 @@ void XBDM::DevConsole::StopAutomatingInput(DWORD userIndex, bool &ok)
     // tell the console to start with the input
     std::string response;
     SendCommand(std::string(message), response);
+}
+
+void XBDM::DevConsole::AddGamepadToQueue(DWORD userIndex, GamepadState gamepad, bool &ok)
+{
+    // validate the user index
+    if (userIndex > 3)
+    {
+        ok = false;
+        return;
+    }
+
+    // get the command to send to the xbox  we'll always
+    // send one at a time because I don't think that they
+    // can handle more than one at a time
+    char command[60] = {0};
+    snprintf(command, 60, "autoinput user=%d queuepackets count=1 timearray countarray", userIndex);
+
+    std::string response;
+    ResponseStatus status;
+    SendCommand(std::string(command), response, status);
+
+    // make sure that the console processed the request properly
+    if (status != ResponseStatus::ReadyToAcceptData)
+    {
+        ok = false;
+        return;
+    }
+
+    // the xbox sends 2 null bytes following both the gamepad structure and the
+    // other data it needs. If this is true for all of the sending of binary data
+    // then ill change the function, but for now ill just do it here. I think those
+    // 2 bytes might be flags, not sure though
+    BYTE temp[14] = {0};
+    memcpy(temp, &gamepad, sizeof(GamepadState));
+    SendBinary((BYTE*)temp, sizeof(GamepadState) + 2);
+
+    // this is the time array and count array, which the xbox seems to pay no attention to
+    // it says that it's the amount of time that the button is down, but it doesn't work
+    DWORD args[3] = { 1, 1, 0};
+    SendBinary((BYTE*)args, 10);
+
+    // the console will send back the amount of gamepads queued
+    RecieveResponse(response, status);
+
+    response = "";
+}
+
+void XBDM::DevConsole::SendGamepads(DWORD userIndex, std::vector<GamepadState> &gamepads, bool &ok)
+{
+
+
+    // send all of the gamepads to the console
+    for (GamepadState g : gamepads)
+    {
+        // tell the console to stop recieving input from the controller
+        StartAutomatingInput(userIndex, ok, gamepads.size());
+
+        AddGamepadToQueue(userIndex, g, ok);
+        ResetConnection();
+
+        // return control to the physical controller
+        StopAutomatingInput(userIndex, ok);
+    }
+
+   // ClearGamepadQueue(userIndex, ok);
+
+
+}
+
+void XBDM::DevConsole::ClearGamepadQueue(DWORD userIndex, bool &ok)
+{
+    // validate the user index
+    if (userIndex > 3)
+    {
+        ok = false;
+        return;
+    }
+
+    char command[40];
+    snprintf(command, 40, "autoinput user=%d clearqueue", userIndex);
+
+    std::string response;
+    SendCommand(std::string(command), response);
 }
 
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)
