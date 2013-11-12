@@ -94,6 +94,9 @@ namespace XBDM
         void                        DeleteFile(std::string path, bool &ok);
         void                        DeleteDirectory(std::string path, bool &ok);
 
+        // setters
+        void                        SetMemory(DWORD address, const BYTE *buffer, DWORD length, bool &ok);
+
 
     private:
         SOCKET          xsocket;

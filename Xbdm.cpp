@@ -533,6 +533,43 @@ void XBDM::DevConsole::DeleteDirectory(string path, bool &ok)
     DeleteDirent(path, true, ok);
 }
 
+void XBDM::DevConsole::SetMemory(DWORD address, const BYTE *buffer, DWORD length, bool &ok)
+{
+    while (length > 0)
+    {
+        // the xbox can only receive 128 bytes at once
+        DWORD bytesToSend = (length > 128) ? 128 : length;
+
+        // build the command to send
+        stringstream command;
+        command << "setmem ";
+        command << "addr=0x" << std::hex << address << " ";
+        command << "data=";
+
+        for (int i = 0; i < bytesToSend; i++)
+            command << std::hex << (DWORD)buffer[i];
+
+        // send the command
+        string response;
+        ResponseStatus status;
+        SendCommand(command.str(), response, status);
+
+        // if the status isn't 200, then you can't write to that location
+        if (status != ResponseStatus::OK)
+        {
+            ok = false;
+            return;
+        }
+
+        // update our values for the next iteration
+        buffer += bytesToSend;
+        address += bytesToSend;
+        length -= bytesToSend;
+    }
+
+    ok = true;
+}
+
 void XBDM::DevConsole::DeleteDirent(string path, bool isDirectory, bool &ok)
 {
     string response;

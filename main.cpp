@@ -19,7 +19,10 @@ int main(void)
    // console.SendCommand("sendfile name=\"DEVKIT:\\testing\\boothole\" size=0x34", response);
     //cout << response << endl;
 
-    console.DeleteDirectory("DEVKIT:\\damion\\", ok);
+    BYTE buffer[0x1000];
+    memset(buffer, 0xAA, 0x1000);
+
+    console.SetMemory(0x800CCFB4, buffer, 0x1000, ok);
     console.CloseConnection();
 
 
