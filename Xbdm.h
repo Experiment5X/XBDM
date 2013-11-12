@@ -68,7 +68,6 @@ namespace XBDM
         std::vector<MemoryRegion>   GetMemoryRegions(bool &ok, bool forceResend = false);
         std::unique_ptr<BYTE[]>     GetScreenshot(bool &ok);
         std::unique_ptr<BYTE[]>     GetMemory(DWORD address, DWORD length, bool &ok);
-        void                        GetFile(std::string remotePath, std::string localPath, bool &ok);
 
         void                        DumpMemory(DWORD address, DWORD length, std::string dumpPath);
 
@@ -88,6 +87,12 @@ namespace XBDM
         // file operations
         void                        RenameFile(std::string oldName, std::string newName, bool &ok);
         void                        MoveFile(std::string oldName, std::string newName, bool &ok);
+        void                        MakeDirectory(std::string path, bool &ok);
+        void                        ReceiveFile(std::string remotePath, std::string localPath, bool &ok);
+        void                        SendFile(std::string localPath, std::string remotePath, bool &ok);
+        void                        DeleteDirent(std::string path, bool isDirectory, bool &ok);
+        void                        DeleteFile(std::string path, bool &ok);
+        void                        DeleteDirectory(std::string path, bool &ok);
 
 
     private:

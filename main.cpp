@@ -15,12 +15,13 @@ int main(void)
     }
 
     bool ok;
-    //std::string response;
-    //console.SendCommand("autoinput user=0 bind queuelen=0", response);
+   // std::string response;
+   // console.SendCommand("sendfile name=\"DEVKIT:\\testing\\boothole\" size=0x34", response);
     //cout << response << endl;
 
-    console.RenameFile("DEVKIT:\\OpticalDiscLog_0.txt", "DEVKIT:\\booster.txt", ok);
+    console.DeleteDirectory("DEVKIT:\\damion\\", ok);
     console.CloseConnection();
+
 
     cout << "done" << endl;
     getchar();

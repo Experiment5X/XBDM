@@ -279,7 +279,7 @@ std::unique_ptr<BYTE[]> XBDM::DevConsole::GetMemory(DWORD address, DWORD length,
     return buffer;
 }
 
-void XBDM::DevConsole::GetFile(string remotePath, string localPath, bool &ok)
+void XBDM::DevConsole::ReceiveFile(string remotePath, string localPath, bool &ok)
 {
     // send the command to get the file, only reading the '203 - binary response follows' or whatever
     std::string response = "";
@@ -474,6 +474,74 @@ void XBDM::DevConsole::RenameFile(string oldName, string newName, bool &ok)
     string response;
 
     ok = SendCommand(command, response);
+}
+
+void XBDM::DevConsole::MakeDirectory(string path, bool &ok)
+{
+    string response;
+    ok = SendCommand("mkdir name=\"" + path + "\"", response);
+}
+
+void XBDM::DevConsole::SendFile(string localPath, string remotePath, bool &ok)
+{
+    // open the file for reading, and it could be anything so: binary
+    ifstream localFile(localPath.c_str(), ios_base::in | ios_base::binary);
+
+    // get the length of the file
+    localFile.seekg(0, ios_base::end);
+    DWORD fileLength = localFile.tellg();
+
+    // format the command to send to the console
+    stringstream command;
+    command << "sendfile name=\"" << remotePath << "\" ";
+    command << "length=0x" << std::hex << fileLength;
+
+    string response;
+    ResponseStatus status;
+    SendCommand(command.str(), response, status);
+
+    if (status != ResponseStatus::ReadyToAcceptData)
+    {
+        ok = false;
+        return;
+    }
+
+    // seek back to the beginning of the file
+    localFile.seekg(0, ios_base::beg);
+
+    // send it in chunks, this way it can handle huge files
+    BYTE *fileBuffer = new BYTE[0x10000];
+    while (fileLength >= 0x10000)
+    {
+        localFile.read((char*)fileBuffer, 0x10000);
+        SendBinary(fileBuffer, 0x10000);
+
+        fileLength -= 0x10000;
+    }
+    if (fileLength != 0)
+    {
+        localFile.read((char*)fileBuffer, fileLength);
+        SendBinary(fileBuffer, fileLength);
+    }
+
+    delete[] fileBuffer;
+    return;
+}
+
+void XBDM::DevConsole::DeleteDirectory(string path, bool &ok)
+{
+    DeleteDirent(path, true, ok);
+}
+
+void XBDM::DevConsole::DeleteDirent(string path, bool isDirectory, bool &ok)
+{
+    string response;
+    ok = SendCommand("delete name=\"" + path + "\"" + ((isDirectory) ? " DIR" : ""), response);
+}
+
+void XBDM::DevConsole::DeleteFile(string path, bool &ok)
+{
+    DeleteDirent(path, false, ok);
 }
 
 void XBDM::DevConsole::MoveFile(string oldName, string newName, bool &ok)
