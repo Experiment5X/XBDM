@@ -438,8 +438,6 @@ void XBDM::DevConsole::AddGamepadToQueue(DWORD userIndex, GamepadState gamepad, 
 
 void XBDM::DevConsole::SendGamepads(DWORD userIndex, std::vector<GamepadState> &gamepads, bool &ok)
 {
-
-
     // send all of the gamepads to the console
     for (GamepadState g : gamepads)
     {
@@ -452,10 +450,6 @@ void XBDM::DevConsole::SendGamepads(DWORD userIndex, std::vector<GamepadState> &
         // return control to the physical controller
         StopAutomatingInput(userIndex, ok);
     }
-
-   // ClearGamepadQueue(userIndex, ok);
-
-
 }
 
 void XBDM::DevConsole::ClearGamepadQueue(DWORD userIndex, bool &ok)
@@ -472,6 +466,19 @@ void XBDM::DevConsole::ClearGamepadQueue(DWORD userIndex, bool &ok)
 
     std::string response;
     SendCommand(std::string(command), response);
+}
+
+void XBDM::DevConsole::RenameFile(string oldName, string newName, bool &ok)
+{
+    string command = "RENAME NAME=\"" + oldName + "\"" + " NEWNAME=\"" + newName + "\"";
+    string response;
+
+    ok = SendCommand(command, response);
+}
+
+void XBDM::DevConsole::MoveFile(string oldName, string newName, bool &ok)
+{
+    RenameFile(oldName, newName, ok);
 }
 
 DWORD XBDM::DevConsole::GetDebugMemorySize(bool &ok, bool forceResend)

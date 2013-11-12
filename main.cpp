@@ -19,13 +19,8 @@ int main(void)
     //console.SendCommand("autoinput user=0 bind queuelen=0", response);
     //cout << response << endl;
 
-    GamepadState state = { 0 };
-    state.dpadDOWN = true;
-
-    std::vector<GamepadState> gamepads;
-    gamepads.assign(3, state);
-
-    console.SendGamepads(0, gamepads, ok);
+    console.RenameFile("DEVKIT:\\OpticalDiscLog_0.txt", "DEVKIT:\\booster.txt", ok);
+    console.CloseConnection();
 
     cout << "done" << endl;
     getchar();

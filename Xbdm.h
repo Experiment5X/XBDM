@@ -85,6 +85,10 @@ namespace XBDM
         void                        SendGamepads(DWORD userIndex, std::vector<GamepadState> &gamepads, bool &ok);
         void                        ClearGamepadQueue(DWORD userIndex, bool &ok);
 
+        // file operations
+        void                        RenameFile(std::string oldName, std::string newName, bool &ok);
+        void                        MoveFile(std::string oldName, std::string newName, bool &ok);
+
 
     private:
         SOCKET          xsocket;
@@ -104,7 +108,7 @@ namespace XBDM
         std::vector<Drive>          drives;
         std::vector<Module>         loadedModules;
         std::vector<Thread>         threads;
-        std::vector<MemoryRegion>    memoryRegions;
+        std::vector<MemoryRegion>   memoryRegions;
 
         // i would use std::regex in these 3 functions, but it's not fully implemented in mingw yet
         DWORD           GetIntegerProperty(std::string &response, std::string propertyName, bool &ok, bool hex = false, bool update = false);
