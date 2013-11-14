@@ -727,6 +727,9 @@ std::vector<Drive> XBDM::DevConsole::GetDrives(bool &ok, bool forceResend)
 {
     if (drives.size() == 0 || forceResend)
     {
+        // clear the existing drives
+        drives.erase(drives.begin(), drives.end());
+
         std::string response;
         SendCommand("drivelist", response);
 
@@ -797,6 +800,9 @@ std::vector<Module> XBDM::DevConsole::GetLoadedModules(bool &ok, bool forceResen
 {
     if (loadedModules.size() == 0 || forceResend)
     {
+        // clear the existing modules
+        loadedModules.erase(loadedModules.begin(), loadedModules.end());
+
         std::string response;
         SendCommand("modules", response);
 
@@ -849,6 +855,9 @@ std::vector<Thread> XBDM::DevConsole::GetThreads(bool &ok, bool forceResend)
 {
     if (threads.size() == 0 || forceResend)
     {
+        // clear the existing threads
+        threads.erase(threads.begin(), threads.end());
+
         std::string response;
         SendCommand("threads", response);
 
@@ -911,6 +920,9 @@ std::vector<MemoryRegion> XBDM::DevConsole::GetMemoryRegions(bool &ok, bool forc
 {
     if (memoryRegions.size() == 0 || forceResend)
     {
+        // clear the existing memory regions
+        memoryRegions.erase(memoryRegions.begin(), memoryRegions.end());
+
         std::string response;
         SendCommand("walkmem", response, 0x400, 37);
 
