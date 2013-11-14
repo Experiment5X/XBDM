@@ -736,8 +736,11 @@ std::vector<Drive> XBDM::DevConsole::GetDrives(bool &ok, bool forceResend)
         {
             std::string driveName = GetStringProperty(response, "drivename", ok, true);
 
-            Drive d = { driveName, 0, 0, 0 };
-            drives.push_back(d);
+            if (ok)
+            {
+                Drive d = { driveName, 0, 0, 0 };
+                drives.push_back(d);
+            }
         }
         while (ok);
 
@@ -781,7 +784,8 @@ std::vector<FileEntry> XBDM::DevConsole::GetDirectoryContents(string directory, 
         entry.modifiedTime = ((UINT64)GetIntegerProperty(response, "changehi", ok, true, true) << 32) | GetIntegerProperty(response, "changelo", ok, true, true);
         entry.directory = response.find(" directory") == 0;
 
-        toReturn.push_back(entry);
+        if (ok)
+            toReturn.push_back(entry);
     }
     while (ok);
 
