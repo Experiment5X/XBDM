@@ -191,7 +191,7 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
                 ZeroMemory(buffer, 0x400);
 
                 RecieveBinary(buffer, 0x400);
-                response += std::string((char*)buffer);
+                response += std::string((char*)buffer, 0x400);
             }
             break;
 
