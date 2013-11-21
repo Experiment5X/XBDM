@@ -11,6 +11,7 @@
 #include <cctype>
 #include <memory>
 #include <fstream>
+#include <chrono>
 #include "XbdmDefinitions.h"
 
 using std::string;
@@ -124,6 +125,8 @@ namespace XBDM
         std::string     GetEnumProperty(std::string &response, std::string propertyName, bool &ok);
 
         std::string     MemoryRegionFlagsToString(DWORD flags);
+
+        bool recvTimeout(SOCKET s,char *buf,int len,int flags);
     };
 };
 

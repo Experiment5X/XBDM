@@ -52,6 +52,11 @@ bool XBDM::DevConsole::OpenConnection()
             return false;
         }
 
+        // set timeouts
+        struct timeval tv = { 5, 0 };
+        setsockopt(xsocket, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(struct timeval));
+        //setsockopt(xsocket, SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(struct timeval));
+
         // Connect to console
         iResult = connect(xsocket, ptr->ai_addr, (int)ptr->ai_addrlen);
         if (iResult == SOCKET_ERROR)
@@ -113,7 +118,8 @@ bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, bool text)
     // for text, we're going to take characters off the queue until we hit a null-terminator
     if (text)
     {
-        recv(xsocket, (char*)buffer, length, MSG_PEEK);
+        if (!recvTimeout(xsocket, (char*)buffer, length, MSG_PEEK))
+            return false;
 
         DWORD lenToGet = 0;
         do
@@ -126,13 +132,15 @@ bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, bool text)
 
         // now actually read the bytes off the queue
         ZeroMemory(buffer, length);
-        recv(xsocket, (char*)buffer, lenToGet, 0);
+        if (!recvTimeout(xsocket, (char*)buffer, lenToGet, 0))
+            return false;
     }
     else
     {
-        int bytesRecieved = recv(xsocket, (char*)buffer, length, 0);
-        return bytesRecieved == length;
+        return recvTimeout(xsocket, (char*)buffer, length, 0);
     }
+
+    return true;
 }
 
 bool XBDM::DevConsole::SendCommand(string command, string &response, DWORD responseLength, DWORD statusLength)
@@ -159,13 +167,15 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
 bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status, DWORD responseLength, DWORD statusLength)
 {
     // get the response from the console, first just read the status
-    BYTE *buffer = new BYTE[responseLength];
-    ZeroMemory(buffer, responseLength);
-    RecieveBinary(buffer, 5, false);
+    unique_ptr<BYTE[]> buffer(new BYTE[responseLength]);
+    ZeroMemory(buffer.get(), responseLength);
+
+    if (!RecieveBinary(buffer.get(), 5, false))
+        return false;
 
     // get the status from the response
     int statusInt;
-    istringstream(string((char*)buffer).substr(0, 3)) >> statusInt;
+    istringstream(string((char*)buffer.get()).substr(0, 3)) >> statusInt;
     status = (ResponseStatus)statusInt;
 
     // parse the response
@@ -173,8 +183,9 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
     {
         case ResponseStatus::OK:
         case ResponseStatus::ReadyToAcceptData:
-            RecieveBinary(buffer, responseLength);
-            response = std::string((char*)buffer);
+            if (!RecieveBinary(buffer.get(), responseLength))
+                return false;
+            response = std::string((char*)buffer.get());
             break;
 
         case ResponseStatus::Multiline:
@@ -182,36 +193,38 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
             // when requesting threads, it says "thread info follows" instead of the
             // normal multiine response thing, it makes no sense
             // read off "mulitline response follows"
-            RecieveBinary(buffer, (statusLength == -1) ? 0x1C : statusLength, false);
-            ZeroMemory(buffer, responseLength);
+            if (!RecieveBinary(buffer.get(), (statusLength == -1) ? 0x1C : statusLength, false))
+                return false;
+            ZeroMemory(buffer.get(), responseLength);
 
             // the end of the response always contains "\r\n."
             while (response.find("\r\n.") == std::string::npos)
             {
-                ZeroMemory(buffer, 0x400);
+                ZeroMemory(buffer.get(), 0x400);
 
-                RecieveBinary(buffer, 0x400);
-                response += std::string((char*)buffer, 0x400);
+                if (!RecieveBinary(buffer.get(), 0x400))
+                    return false;
+                response += std::string((char*)buffer.get(), 0x400);
             }
             break;
 
         case ResponseStatus::Binary:
             // read off "binary response follows"
-            RecieveBinary(buffer, (statusLength == -1) ? 0x19 : statusLength, false);
+            if (!RecieveBinary(buffer.get(), (statusLength == -1) ? 0x19 : statusLength, false))
+                return false;
 
             // let the caller deal with reading the stream
             break;
 
         case ResponseStatus::Error:
-            RecieveBinary(buffer, responseLength);
-            response = std::string((char*)buffer);
+            if (!RecieveBinary(buffer.get(), responseLength))
+                return false;
+            response = std::string((char*)buffer.get());
 
             break;
         default:
             return false;
     }
-
-    delete[] buffer;
 
     // trim off the leading and trailing whitespace
     response.erase(response.begin(), std::find_if(response.begin(), response.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -768,10 +781,10 @@ std::vector<Drive> XBDM::DevConsole::GetDrives(bool &ok, bool forceResend)
 std::vector<FileEntry> XBDM::DevConsole::GetDirectoryContents(string directory, bool &ok)
 {
     std::string response;
-    SendCommand("dirlist name=\"" + directory + "\"", response);
+    ok = SendCommand("dirlist name=\"" + directory + "\"", response);
 
     std::vector<FileEntry> toReturn;
-    if (response.find("file not found\r\n") == 0)
+    if (!ok || response.find("file not found\r\n") == 0)
     {
         ok = false;
         return toReturn;
@@ -1116,6 +1129,13 @@ string XBDM::DevConsole::MemoryRegionFlagsToString(DWORD flags)
 
     // doubles aren't precices, that's why i need to do the rounding
     return flagStrings[(int)((log(flags) / log(2)) + .5)];
+}
+
+bool XBDM::DevConsole::recvTimeout(SOCKET s, char *buf, int len, int flags)
+{
+    if (recv(s, buf, len, flags) == SOCKET_ERROR)
+        return false;
+    return true;
 }
 
 
