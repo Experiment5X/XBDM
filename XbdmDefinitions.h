@@ -107,6 +107,7 @@ namespace XBDM
         UINT64 freeBytesAvailable;
         UINT64 totalBytes;
         UINT64 totalFreeBytes;
+        std::string friendlyName;
     };
 
     struct SystemInformation

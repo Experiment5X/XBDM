@@ -787,6 +787,18 @@ std::vector<Drive> XBDM::DevConsole::GetDrives(bool &ok, bool forceResend)
                                      (UINT64)GetIntegerProperty(response, "totalbyteslo", ok, true);
             d.totalFreeBytes =      ((UINT64)GetIntegerProperty(response, "totalfreebyteshi", ok, true) << 32) |
                                      (UINT64)GetIntegerProperty(response, "totalfreebyteslo", ok, true);
+
+            // get the friendly name for volume, these are from neighborhood
+            if (d.name == "DEVKIT" || d.name == "E")
+                d.friendlyName = "Game Development Volume (" + d.name + ":)";
+            else if (d.name == "HDD")
+                d.friendlyName = "Retail Hard Drive Emulation (" + d.name + ":)";
+            else if (d.name == "Y")
+                d.friendlyName = "Xbox360 Dashboard Volume (" + d.name + ":)";
+            else if (d.name == "Z")
+                d.friendlyName = "Devkit Drive (" + d.name + ":)";
+            else
+                d.friendlyName = "Volume (" + d.name + ":)";
         }
     }
 
