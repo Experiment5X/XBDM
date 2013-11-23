@@ -300,7 +300,11 @@ void XBDM::DevConsole::ReceiveFile(string remotePath, string localPath, bool &ok
 
     // read the file length
     BYTE temp[4];
-    RecieveBinary(temp, 4, false);
+    if (!RecieveBinary(temp, 4, false))
+    {
+        ok = false;
+        return;
+    }
 
     // it's in little endian on the xbox, i have no idea what
     // endian the system will be that this runs on, so we gotta swap it
@@ -313,20 +317,32 @@ void XBDM::DevConsole::ReceiveFile(string remotePath, string localPath, bool &ok
     BYTE *fileBuffer = new BYTE[0x10000];
     while (fileLength >= 0x10000)
     {
-        RecieveBinary(fileBuffer, 0x10000, false);
+        if (!RecieveBinary(fileBuffer, 0x10000, false))
+        {
+            ok = false;
+            delete[] fileBuffer;
+            return;
+        }
         outFile.write((char*)fileBuffer, 0x10000);
 
         fileLength -= 0x10000;
     }
     if (fileLength != 0)
     {
-        RecieveBinary(fileBuffer, fileLength, false);
+        if (!RecieveBinary(fileBuffer, fileLength, false))
+        {
+            ok = false;
+            delete[] fileBuffer;
+            return;
+        }
         outFile.write((char*)fileBuffer, fileLength);
     }
 
     // cleanup, everyone's gotta do their share
     outFile.close();
     delete[] fileBuffer;
+
+    ok = true;
 }
 
 void XBDM::DevConsole::DumpMemory(DWORD address, DWORD length, string dumpPath)
