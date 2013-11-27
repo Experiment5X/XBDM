@@ -78,7 +78,7 @@ bool XBDM::DevConsole::OpenConnection()
 
     // read the crap placed on teh queue, should be "201- connected"
     BYTE buffer[0x80] = {0};
-    RecieveBinary(buffer, 0x80);
+    RecieveTextBuffer(buffer, 0x80);
     DWORD cmp = strcmp((char*)buffer, "201- connected\r\n");
 
     return connected = (cmp == 0);
@@ -113,33 +113,30 @@ bool XBDM::DevConsole::SendBinary(const BYTE *buffer, DWORD length)
     return true;
 }
 
-bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, bool text)
+bool XBDM::DevConsole::RecieveBinary(BYTE *buffer, DWORD length, DWORD &bytesRecieved)
 {
-    // for text, we're going to take characters off the queue until we hit a null-terminator
-    if (text)
+    return recvTimeout(xsocket, (char*)buffer, length, 0, bytesRecieved);
+}
+
+bool XBDM::DevConsole::RecieveTextBuffer(BYTE *buffer, DWORD length)
+{
+    DWORD bytesReceived;
+    if (!recvTimeout(xsocket, (char*)buffer, length, MSG_PEEK, bytesReceived))
+        return false;
+
+    DWORD lenToGet = 0;
+    do
     {
-        if (!recvTimeout(xsocket, (char*)buffer, length, MSG_PEEK))
-            return false;
-
-        DWORD lenToGet = 0;
-        do
-        {
-            if (buffer[lenToGet] == 0)
-                break;
-            lenToGet++;
-        }
-        while (lenToGet < length);
-
-        // now actually read the bytes off the queue
-        ZeroMemory(buffer, length);
-        if (!recvTimeout(xsocket, (char*)buffer, lenToGet, 0))
-            return false;
+        if (buffer[lenToGet] == 0)
+            break;
+        lenToGet++;
     }
-    else
-    {
-        return recvTimeout(xsocket, (char*)buffer, length, 0);
-    }
+    while (lenToGet < length);
 
+    // now actually read the bytes off the queue
+    ZeroMemory(buffer, length);
+    if (!recvTimeout(xsocket, (char*)buffer, lenToGet, 0, bytesReceived))
+        return false;
     return true;
 }
 
@@ -170,7 +167,9 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
     unique_ptr<BYTE[]> buffer(new BYTE[responseLength]);
     ZeroMemory(buffer.get(), responseLength);
 
-    if (!RecieveBinary(buffer.get(), 5, false))
+    // read the status
+    DWORD bytesRecieved;
+    if (!RecieveBinary(buffer.get(), 5, bytesRecieved))
         return false;
 
     // get the status from the response
@@ -183,7 +182,7 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
     {
         case ResponseStatus::OK:
         case ResponseStatus::ReadyToAcceptData:
-            if (!RecieveBinary(buffer.get(), responseLength))
+            if (!RecieveTextBuffer(buffer.get(), responseLength))
                 return false;
             response = std::string((char*)buffer.get());
             break;
@@ -193,7 +192,7 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
             // when requesting threads, it says "thread info follows" instead of the
             // normal multiine response thing, it makes no sense
             // read off "mulitline response follows"
-            if (!RecieveBinary(buffer.get(), (statusLength == -1) ? 0x1C : statusLength, false))
+            if (!RecieveBinary(buffer.get(), (statusLength == -1) ? 0x1C : statusLength, bytesRecieved))
                 return false;
             ZeroMemory(buffer.get(), responseLength);
 
@@ -202,7 +201,7 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
             {
                 ZeroMemory(buffer.get(), 0x400);
 
-                if (!RecieveBinary(buffer.get(), 0x400))
+                if (!RecieveTextBuffer(buffer.get(), 0x400))
                     return false;
                 response += std::string((char*)buffer.get(), 0x400);
             }
@@ -210,14 +209,14 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
 
         case ResponseStatus::Binary:
             // read off "binary response follows"
-            if (!RecieveBinary(buffer.get(), (statusLength == -1) ? 0x19 : statusLength, false))
+            if (!RecieveBinary(buffer.get(), (statusLength == -1) ? 0x19 : statusLength, bytesRecieved))
                 return false;
 
             // let the caller deal with reading the stream
             break;
 
         case ResponseStatus::Error:
-            if (!RecieveBinary(buffer.get(), responseLength))
+            if (!RecieveTextBuffer(buffer.get(), responseLength))
                 return false;
             response = std::string((char*)buffer.get());
 
@@ -247,8 +246,9 @@ std::unique_ptr<BYTE[]> XBDM::DevConsole::GetScreenshot(bool &ok)
     DWORD size = GetIntegerProperty(response, "framebuffersize", ok, true);
 
     // get the screenshot from the console
+    DWORD bytesRecieved;
     std::unique_ptr<BYTE[]> imageBuffer(new BYTE[size]);
-    RecieveBinary(imageBuffer.get(), size, false);
+    RecieveBinary(imageBuffer.get(), size, bytesRecieved);
 
     return imageBuffer;
 }
@@ -267,25 +267,26 @@ std::unique_ptr<BYTE[]> XBDM::DevConsole::GetMemory(DWORD address, DWORD length,
 
     // we have to read the memory in 1kb, 0x400 byte, chunks
     DWORD offset = 0;
+    DWORD bytesRecieved;
     while (length >= 0x400)
     {
         // there's always these 2 bytes at the beginning, i think they're flags
         // not gonna worry about them now, if there are issues then there
         // might be some status flag here, i see in their code they do something
         // with the flag 0x8000, i think they might quit early? i dunno
-        RecieveBinary(buffer.get() + offset, 2, false);
+        RecieveBinary(buffer.get() + offset, 2, bytesRecieved);
 
         // read the memory from the console
-        RecieveBinary(buffer.get() + offset, 0x400, false);
+        RecieveBinary(buffer.get() + offset, 0x400, bytesRecieved);
         length -= 0x400;
         offset += 0x400;
     }
     if (length > 0)
     {
         // read off those flags again
-        RecieveBinary(buffer.get() + offset, 2, false);
+        RecieveBinary(buffer.get() + offset, 2, bytesRecieved);
 
-        RecieveBinary(buffer.get() + offset, length, false);
+        RecieveBinary(buffer.get() + offset, length, bytesRecieved);
         length -= length;
     }
 
@@ -300,7 +301,8 @@ void XBDM::DevConsole::ReceiveFile(string remotePath, string localPath, bool &ok
 
     // read the file length
     BYTE temp[4];
-    if (!RecieveBinary(temp, 4, false))
+    DWORD bytesRecieved;
+    if (!RecieveBinary(temp, 4, bytesRecieved))
     {
         ok = false;
         return;
@@ -315,27 +317,18 @@ void XBDM::DevConsole::ReceiveFile(string remotePath, string localPath, bool &ok
 
     // read the file in 0x10000 byte chunks
     BYTE *fileBuffer = new BYTE[0x10000];
-    while (fileLength >= 0x10000)
+    while (fileLength > 0)
     {
-        if (!RecieveBinary(fileBuffer, 0x10000, false))
+        // read, at most 0x10000 bytes, off the queue
+        if (!RecieveBinary(fileBuffer, ((fileLength >= 0x10000) ? 0x10000 : fileLength), bytesRecieved))
         {
             ok = false;
             delete[] fileBuffer;
             return;
         }
-        outFile.write((char*)fileBuffer, 0x10000);
+        outFile.write((char*)fileBuffer, bytesRecieved);
 
-        fileLength -= 0x10000;
-    }
-    if (fileLength != 0)
-    {
-        if (!RecieveBinary(fileBuffer, fileLength, false))
-        {
-            ok = false;
-            delete[] fileBuffer;
-            return;
-        }
-        outFile.write((char*)fileBuffer, fileLength);
+        fileLength -= bytesRecieved;
     }
 
     // cleanup, everyone's gotta do their share
@@ -343,6 +336,41 @@ void XBDM::DevConsole::ReceiveFile(string remotePath, string localPath, bool &ok
     delete[] fileBuffer;
 
     ok = true;
+}
+
+void XBDM::DevConsole::ReceiveDirectory(string remoteDirectory, string localLocation, bool &ok)
+{
+    // get the contents of the directory requested
+    vector<FileEntry> dirContents = GetDirectoryContents(remoteDirectory, ok);
+    if (!ok)
+        return;
+
+    // create the folder on the local file system
+    string requestedDirectoryName = remoteDirectory.substr(remoteDirectory.rfind('\\', remoteDirectory.size() - 2) + 1, remoteDirectory.rfind('\\'));
+#ifdef __WIN32
+    ok = CreateDirectoryA((localLocation + requestedDirectoryName).c_str(), NULL);
+    if (!ok)
+        return;
+#endif
+
+    // get all of the dirents from the console
+    localLocation += requestedDirectoryName;
+    for (FileEntry dirent : dirContents)
+    {
+        // if there are folders inside the folder requested, then we need to recursively get them
+        if (dirent.directory)
+        {
+            ReceiveDirectory(remoteDirectory + dirent.name + "\\", localLocation, ok);
+            if (!ok)
+                return;
+        }
+        else
+        {
+            ReceiveFile(remoteDirectory + dirent.name, localLocation + dirent.name, ok);
+            if (!ok)
+                return;
+        }
+    }
 }
 
 void XBDM::DevConsole::DumpMemory(DWORD address, DWORD length, string dumpPath)
@@ -1163,9 +1191,10 @@ string XBDM::DevConsole::MemoryRegionFlagsToString(DWORD flags)
     return flagStrings[(int)((log(flags) / log(2)) + .5)];
 }
 
-bool XBDM::DevConsole::recvTimeout(SOCKET s, char *buf, int len, int flags)
+bool XBDM::DevConsole::recvTimeout(SOCKET s, char *buf, int len, int flags, DWORD &bytesReceived)
 {
-    if (recv(s, buf, len, flags) == SOCKET_ERROR)
+    bytesReceived = recv(s, buf, len, flags);
+    if (bytesReceived == SOCKET_ERROR)
         return false;
     return true;
 }

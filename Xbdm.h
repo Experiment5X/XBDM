@@ -41,7 +41,8 @@ namespace XBDM
         void ResetConnection();
 
         bool SendBinary(const BYTE *buffer, DWORD length);
-        bool RecieveBinary(BYTE *buffer, DWORD length, bool text = true);
+        bool RecieveBinary(BYTE *buffer, DWORD length, DWORD &bytesRecieved);
+        bool RecieveTextBuffer(BYTE *buffer, DWORD length);
         bool SendCommand(string command, string &response, DWORD responseLength = 0x400, DWORD statusLength = -1);
         bool SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
         bool RecieveResponse(string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
@@ -90,6 +91,7 @@ namespace XBDM
         void                        MoveFile(std::string oldName, std::string newName, bool &ok);
         void                        MakeDirectory(std::string path, bool &ok);
         void                        ReceiveFile(std::string remotePath, std::string localPath, bool &ok);
+        void                        ReceiveDirectory(std::string remoteDirectory, std::string localLocation, bool &ok);
         void                        SendFile(std::string localPath, std::string remotePath, bool &ok);
         void                        DeleteDirent(std::string path, bool isDirectory, bool &ok);
         void                        DeleteFile(std::string path, bool &ok);
@@ -126,7 +128,7 @@ namespace XBDM
 
         std::string     MemoryRegionFlagsToString(DWORD flags);
 
-        bool recvTimeout(SOCKET s,char *buf,int len,int flags);
+        bool recvTimeout(SOCKET s,char *buf,int len,int flags, DWORD &bytesReceived);
     };
 };
 
