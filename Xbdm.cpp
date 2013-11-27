@@ -824,8 +824,8 @@ std::vector<FileEntry> XBDM::DevConsole::GetDirectoryContents(string directory, 
 
         entry.name = GetStringProperty(response, "name", ok, true);
         entry.size = ((UINT64)GetIntegerProperty(response, "sizehi", ok, true, true) << 32) | GetIntegerProperty(response, "sizelo", ok, true, true);
-        entry.creationTime = ((UINT64)GetIntegerProperty(response, "createhi", ok, true, true) << 32) | GetIntegerProperty(response, "createlo", ok, true, true);
-        entry.modifiedTime = ((UINT64)GetIntegerProperty(response, "changehi", ok, true, true) << 32) | GetIntegerProperty(response, "changelo", ok, true, true);
+        entry.creationTime = FILETIME_TO_TIMET(((UINT64)GetIntegerProperty(response, "createhi", ok, true, true) << 32) | GetIntegerProperty(response, "createlo", ok, true, true));
+        entry.modifiedTime = FILETIME_TO_TIMET(((UINT64)GetIntegerProperty(response, "changehi", ok, true, true) << 32) | GetIntegerProperty(response, "changelo", ok, true, true));
         entry.directory = response.find(" directory") == 0;
 
         if (ok)
@@ -943,8 +943,12 @@ std::vector<Thread> XBDM::DevConsole::GetThreads(bool &ok, bool forceResend)
             threadInfo.baseAddress =                    GetIntegerProperty(response, "base", ok, true);
             threadInfo.tlsBaseAddress =                 GetIntegerProperty(response, "limit", ok, true);
             threadInfo.tlsBaseAddress =                 GetIntegerProperty(response, "slack", ok, true);
-            threadInfo.creationTime.dwHighDateTime =    GetIntegerProperty(response, "createhi", ok, true);
-            threadInfo.creationTime.dwLowDateTime =     GetIntegerProperty(response, "createlo", ok, true);
+
+            UINT64 creationTime = 0;
+            creationTime |=                             GetIntegerProperty(response, "createhi", ok, true);
+            creationTime |=                             GetIntegerProperty(response, "createlo", ok, true);
+            threadInfo.creationTime =                   FILETIME_TO_TIMET(creationTime);
+
             threadInfo.nameAddress =                    GetIntegerProperty(response, "nameaddr", ok, true);
             threadInfo.nameLength =                     GetIntegerProperty(response, "namelen", ok, true);
             threadInfo.currentProcessor =               GetIntegerProperty(response, "proc", ok, true);

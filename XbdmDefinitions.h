@@ -9,6 +9,8 @@
     #include <windows.h>
 #endif
 
+#define FILETIME_TO_TIMET(time) ((time_t)(time / 10000000L - 11644473600L))
+
 namespace XBDM
 {
     enum class ResponseStatus
@@ -124,8 +126,8 @@ namespace XBDM
     {
         std::string name;
         UINT64 size;
-        UINT64 creationTime;
-        UINT64 modifiedTime;
+        time_t creationTime;
+        time_t modifiedTime;
 
         bool directory;
     };
@@ -164,7 +166,7 @@ namespace XBDM
         DWORD startAddress;
         DWORD stackBaseAddress;
         DWORD stackLimitAddress;
-        FILETIME creationTime;
+        time_t creationTime;
         DWORD stackSlackSpace;
         DWORD nameAddress;
         DWORD nameLength;
