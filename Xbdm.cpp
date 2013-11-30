@@ -196,8 +196,8 @@ bool XBDM::DevConsole::RecieveResponse(string &response, ResponseStatus &status,
                 return false;
             ZeroMemory(buffer.get(), responseLength);
 
-            // the end of the response always contains "\r\n."
-            while (response.find("\r\n.") == std::string::npos)
+            // the end of the response always contains "\r\n." or ".\r\n"
+            while (response.find("\r\n.") == std::string::npos && response.find(".\r\n") == std::string::npos)
             {
                 ZeroMemory(buffer.get(), 0x400);
 
