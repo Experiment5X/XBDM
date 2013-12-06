@@ -997,7 +997,9 @@ std::vector<MemoryRegion> XBDM::DevConsole::GetMemoryRegions(bool &ok, bool forc
         memoryRegions.erase(memoryRegions.begin(), memoryRegions.end());
 
         std::string response;
-        SendCommand("walkmem", response, 0x400, 37);
+        ok = SendCommand("walkmem", response, 0x400, 37);
+        if (!ok)
+            return vector<MemoryRegion>();
 
         // parse all of the memory regions
         ok = true;
@@ -1011,8 +1013,11 @@ std::vector<MemoryRegion> XBDM::DevConsole::GetMemoryRegions(bool &ok, bool forc
             if (ok)
                 memoryRegions.push_back(region);
         }
+
+        ok = true;
     }
 
+    ok = true;
     return memoryRegions;
 }
 
