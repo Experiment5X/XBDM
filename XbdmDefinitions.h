@@ -4,6 +4,7 @@
 #include <iostream>
 #include <exception>
 #include <vector>
+#include <string>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -154,6 +155,12 @@ namespace XBDM
         DWORD originalSize;     // no idea
 
         std::vector<ModuleSection> sections;
+    };
+
+    struct LocalDirent
+    {
+        std::string name;
+        bool directory;
     };
 
     struct Thread

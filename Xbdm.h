@@ -12,9 +12,11 @@
 #include <memory>
 #include <fstream>
 #include <chrono>
+#include <string>
+
+#include <dirent.h>
 #include "XbdmDefinitions.h"
 
-using std::string;
 
 // because fuck you microsoft
 #define _WIN32_WINNT 0x0501
@@ -43,9 +45,9 @@ namespace XBDM
         bool SendBinary(const BYTE *buffer, DWORD length);
         bool RecieveBinary(BYTE *buffer, DWORD length, DWORD &bytesRecieved);
         bool RecieveTextBuffer(BYTE *buffer, DWORD length);
-        bool SendCommand(string command, string &response, DWORD responseLength = 0x400, DWORD statusLength = -1);
-        bool SendCommand(string command, string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
-        bool RecieveResponse(string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
+        bool SendCommand(std::string command, std::string &response, DWORD responseLength = 0x400, DWORD statusLength = -1);
+        bool SendCommand(std::string command, std::string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
+        bool RecieveResponse(std::string &response, ResponseStatus &status, DWORD responseLength = 0x400, DWORD statusLength = -1);
 
         // getters
         bool                        IsHddEnabled(bool &ok, bool forceResend = false);
@@ -93,6 +95,7 @@ namespace XBDM
         void                        ReceiveFile(std::string remotePath, std::string localPath, bool &ok);
         void                        ReceiveDirectory(std::string remoteDirectory, std::string localLocation, bool &ok);
         void                        SendFile(std::string localPath, std::string remotePath, bool &ok);
+        void                        SendDirectory(std::string localDirectory, std::string remoteLocation, bool &ok);
         void                        DeleteDirent(std::string path, bool isDirectory, bool &ok);
         void                        DeleteFile(std::string path, bool &ok);
         void                        DeleteDirectory(std::string path, bool &ok);
@@ -129,6 +132,10 @@ namespace XBDM
         std::string     MemoryRegionFlagsToString(DWORD flags);
 
         bool recvTimeout(SOCKET s,char *buf,int len,int flags, DWORD &bytesReceived);
+
+    public:
+
+        static std::vector<LocalDirent> getDirectoryListing(std::string directory, bool &ok);
     };
 };
 

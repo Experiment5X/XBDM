@@ -585,6 +585,11 @@ void XBDM::DevConsole::SendFile(string localPath, string remotePath, bool &ok)
     return;
 }
 
+void XBDM::DevConsole::SendDirectory(string localDirectory, string remoteLocation, bool &ok)
+{
+
+}
+
 void XBDM::DevConsole::DeleteDirectory(string path, bool &ok)
 {
     DeleteDirent(path, true, ok);
@@ -1202,6 +1207,44 @@ bool XBDM::DevConsole::recvTimeout(SOCKET s, char *buf, int len, int flags, DWOR
     if (bytesReceived == SOCKET_ERROR)
         return false;
     return true;
+}
+
+std::vector<LocalDirent> XBDM::DevConsole::getDirectoryListing(string directory, bool &ok)
+{
+    DIR *dir;
+    struct dirent *ent;
+    vector<LocalDirent> toReturn;
+
+    // make sure we can open the directory, maybe it doesn't exist?
+    if ((dir = opendir(directory.c_str())) != NULL)
+    {
+        // iterate through all the dirents in the directory
+        while ((ent = readdir(dir)) != NULL)
+        {
+#ifdef __WIN32
+            bool isDir = !!(GetFileAttributesA((directory + string(ent->d_name)).c_str()) & FILE_ATTRIBUTE_DIRECTORY);
+#else
+            struct stat st;
+            lstat(ent->d_name, &st);
+            bool isDir = !!S_ISDIR(st.st_mode);
+#endif
+
+            LocalDirent ld = { string(ent->d_name), isDir };
+
+            // don't need this for our purposes, no need to inlcude it
+            if (ld.name == "." || ld.name == "..")
+                continue;
+
+            toReturn.push_back(ld);
+        }
+        closedir (dir);
+    }
+    else
+    {
+        ok = false;
+    }
+
+    return toReturn;
 }
 
 
