@@ -8,6 +8,13 @@
 
 #ifdef _WIN32
     #include <windows.h>
+#else
+    typedef uint8_t     BYTE;
+    typedef int16_t     SHORT;
+    typedef uint16_t    WORD;
+    typedef uint32_t    DWORD;
+    typedef uint64_t    UINT64;
+
 #endif
 
 #define FILETIME_TO_TIMET(time) ((time_t)(time / 10000000L - 11644473600L))

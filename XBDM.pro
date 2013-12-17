@@ -2,12 +2,15 @@ TEMPLATE = lib
 CONFIG += console
 CONFIG -= qt
 CONFIG += debug
-CONFIG += C++11
+CONFIG += c++11
 
 TARGET = XBDM
 
+unix {
+    CONFIG += staticlib app_bundle
+}
+
 SOURCES += \
-    main.cpp \
     Xbdm.cpp
 
 HEADERS += \

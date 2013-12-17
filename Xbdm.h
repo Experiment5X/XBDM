@@ -26,8 +26,18 @@
     #include <windows.h>
     #include <Ws2tcpip.h>
 #else
-    // worry about this later, maybe use winnames.h from velocity
+    #include <sys/socket.h>
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <netdb.h>
+    #include <unistd.h>
+    #include <math.h>
+
     #define ZeroMemory(buff, len) memset(buff, 0, len)
+    #define INVALID_SOCKET -1
+    #define SOCKET_ERROR -1
+
+    typedef int SOCKET;
 #endif
 
 namespace XBDM

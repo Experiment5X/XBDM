@@ -14,19 +14,21 @@ bool XBDM::DevConsole::OpenConnection()
 {
     // The windows code for this function was taken off
     // http://msdn.microsoft.com/en-us/library/windows/desktop/ms737591(v=vs.85).aspx
-    // and simply modified to connect to a devkit
+    // and simply modified to connect to a devkit, and for OS X/linux
 
-    WSADATA wsaData;
     xsocket = INVALID_SOCKET;
     struct addrinfo *result = NULL,
                     *ptr = NULL,
                     hints;
     int iResult;
 
+#ifdef __WIN32
     // Initialize Winsock
+    WSADATA wsaData;
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0)
         return false;
+#endif
 
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -37,7 +39,9 @@ bool XBDM::DevConsole::OpenConnection()
     iResult = getaddrinfo(ip.c_str(), "730", &hints, &result);
     if (iResult != 0)
     {
+#ifdef __WIN32
         WSACleanup();
+#endif
         return false;
     }
 
@@ -48,7 +52,9 @@ bool XBDM::DevConsole::OpenConnection()
         xsocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
         if (xsocket == INVALID_SOCKET)
         {
+#ifdef __WIN32
             WSACleanup();
+#endif
             return false;
         }
 
@@ -61,7 +67,12 @@ bool XBDM::DevConsole::OpenConnection()
         iResult = connect(xsocket, ptr->ai_addr, (int)ptr->ai_addrlen);
         if (iResult == SOCKET_ERROR)
         {
+#ifdef __WIN32
             closesocket(xsocket);
+#else
+            // the second argument tells it to stop recieving and transmitting
+            close(xsocket);
+#endif
             xsocket = INVALID_SOCKET;
             continue;
         }
@@ -72,7 +83,9 @@ bool XBDM::DevConsole::OpenConnection()
     freeaddrinfo(result);
     if (xsocket == INVALID_SOCKET)
     {
+#ifdef __WIN32
         WSACleanup();
+#endif
         return false;
     }
 
@@ -89,9 +102,11 @@ bool XBDM::DevConsole::CloseConnection()
     std::string response;
     SendCommand("bye", response);
 
-    shutdown(xsocket, SD_SEND);
-    closesocket(xsocket);
-    WSACleanup();
+    shutdown(xsocket, 1);
+    close(xsocket);
+#ifdef __WIN32
+     WSACleanup();
+#endif
     return true;
 }
 
@@ -106,8 +121,10 @@ bool XBDM::DevConsole::SendBinary(const BYTE *buffer, DWORD length)
     int iResult = send(xsocket, (char*)buffer, length, 0);
     if (iResult == SOCKET_ERROR)
     {
-        closesocket(xsocket);
+        close(xsocket);
+#ifdef __WIN32
         WSACleanup();
+#endif
         return false;
     }
     return true;
@@ -156,7 +173,11 @@ bool XBDM::DevConsole::SendCommand(string command, string &response, ResponseSta
         return false;
 
     // weeeeeeellllll, i guess the xbox needs some time to compile the response
+#ifdef __WIN32
     Sleep(20);
+#else
+    usleep(20);
+#endif
 
     return RecieveResponse(response, status, responseLength, statusLength);
 }
