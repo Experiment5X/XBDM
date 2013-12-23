@@ -1219,7 +1219,11 @@ string XBDM::DevConsole::MemoryRegionFlagsToString(DWORD flags)
     };
 
     // doubles aren't precices, that's why i need to do the rounding
-    return flagStrings[(int)((log(flags) / log(2)) + .5)];
+    // also, we can't take the log of 0 (this somehow worked on windows though)
+    if (flags == 0)
+        return flagStrings[0];
+    else
+        return flagStrings[(int)((log(flags) / log(2)) + .5)];
 }
 
 bool XBDM::DevConsole::recvTimeout(SOCKET s, char *buf, int len, int flags, DWORD &bytesReceived)
